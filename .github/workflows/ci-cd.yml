@@ -72,26 +72,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push all service images
+      - name: Build and push gateway image
         run: |
-          SERVICES="gateway auth_billing source_registry crawler parser versioning obligation_extractor graph_service retrieval verification answer_service vector_indexer doc_check drafting export scheduler workers"
-          for svc in $SERVICES; do
-            dockerfile="backend/apps/$svc/Dockerfile"
-            if [ -f "$dockerfile" ]; then
-              docker build -t $REGISTRY/$IMAGE_NAME/$svc:latest -f "$dockerfile" .
-              docker push $REGISTRY/$IMAGE_NAME/$svc:latest
-            fi
-          done
+          docker build -t $REGISTRY/$IMAGE_NAME/gateway:latest -f backend/apps/gateway/Dockerfile .
+          docker push $REGISTRY/$IMAGE_NAME/gateway:latest
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 5.35.87.172
+          host: 62.217.183.95
           username: root
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
             cd /opt/podft
-            docker compose -f docker-compose.yml -f docker-compose.vps.yml pull
-            docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --force-recreate
+            git pull origin main
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml pull gateway postgres qdrant redis minio nginx
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml up -d --force-recreate
             docker image prune -f
             echo "Deploy complete: $(date)"
