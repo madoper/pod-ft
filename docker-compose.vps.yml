@@ -1,9 +1,14 @@
-# Override for VPS deployment (1 GB RAM — exclude Neo4j)
+# Override for VPS deployment (1 GB RAM — exclude Neo4j + nginx container)
+# Use system nginx on VPS (has Let's Encrypt certs already)
 # Usage: docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d
 
 name: podft
 
 services:
   neo4j:
+    profiles:
+      - never
+
+  nginx:
     profiles:
       - never
