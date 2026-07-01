@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from backend.apps.answer_service.app.routers.answer import router as answer_router
 from backend.apps.auth_billing.app.routers.auth import router as auth_router
@@ -43,6 +44,13 @@ app = FastAPI(
 )
 
 app.include_router(health.router)
+
+
+@app.get("/")
+async def root() -> RedirectResponse:
+    return RedirectResponse(url="/api/v1/docs")
+
+
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(schedule_router, prefix="/api/v1")
 app.include_router(sources_router, prefix="/api/v1")
