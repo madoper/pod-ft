@@ -1,0 +1,59 @@
+# Override for 1GB VPS — monolithic mode
+# Only gateway runs (all 41 endpoints), no individual service containers
+# Usage: docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml up -d
+
+services:
+  # Exclude all 16 individual services — gateway handles everything
+  neo4j:
+    profiles: [never]
+
+  nginx:
+    profiles: [never]
+
+  auth-billing:
+    profiles: [never]
+
+  source-registry:
+    profiles: [never]
+
+  crawler:
+    profiles: [never]
+
+  parser:
+    profiles: [never]
+
+  versioning:
+    profiles: [never]
+
+  obligation-extractor:
+    profiles: [never]
+
+  graph-service:
+    profiles: [never]
+
+  vector-indexer:
+    profiles: [never]
+
+  retrieval:
+    profiles: [never]
+
+  verification:
+    profiles: [never]
+
+  answer-service:
+    profiles: [never]
+
+  doc-check:
+    profiles: [never]
+
+  drafting:
+    profiles: [never]
+
+  export:
+    profiles: [never]
+
+  scheduler:
+    profiles: [never]
+
+  workers:
+    profiles: [never]
