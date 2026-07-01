@@ -1,0 +1,202 @@
+# Semantic anchor meta-schema for pod-ft platform
+# Every service, database, and endpoint references this schema.
+# Each Python module carries __anchor__ matching a service id below.
+version: "1.0.0"
+project: "pod-ft"
+domain: "vectornode.ru"
+
+services:
+  - id: "gateway"
+    name: "Gateway"
+    path: "backend/apps/gateway"
+    entrypoint: "app/main.py"
+    port: 8000
+    databases: []
+    dependencies:
+      - "auth-billing"
+      - "source-registry"
+    api:
+      public:
+        - "GET /api/v1/health"
+        - "POST /api/v1/questions/answer"
+        - "POST /api/v1/internal-documents/upload"
+        - "GET /api/v1/jobs/{job_id}"
+        - "GET /api/v1/changes"
+
+  - id: "auth-billing"
+    name: "Auth & Billing"
+    path: "backend/apps/auth_billing"
+    entrypoint: "app/main.py"
+    port: 8001
+    databases: ["postgres"]
+    tables: ["users", "tenants", "subscriptions", "usage_ledger"]
+    api:
+      internal:
+        - "POST /api/v1/auth/register"
+        - "POST /api/v1/auth/login"
+        - "GET /api/v1/auth/profile"
+        - "GET /api/v1/auth/refresh"
+        - "GET /api/v1/billing/quota"
+
+  - id: "source-registry"
+    name: "Source Registry"
+    path: "backend/apps/source_registry"
+    entrypoint: "app/main.py"
+    port: 8002
+    databases: ["postgres"]
+    tables: ["source_domains", "source_endpoints"]
+    api:
+      internal:
+        - "GET /api/v1/sources/active"
+        - "POST /api/v1/admin/sources"
+        - "PATCH /api/v1/admin/sources/{id}"
+        - "GET /api/v1/admin/sources"
+
+  - id: "crawler"
+    name: "Crawler"
+    path: "backend/apps/crawler"
+    entrypoint: "app/main.py"
+    port: 8003
+    databases: ["postgres", "redis"]
+    tables: ["crawl_jobs", "crawl_results"]
+
+  - id: "parser"
+    name: "Parser"
+    path: "backend/apps/parser"
+    entrypoint: "app/main.py"
+    port: 8004
+    databases: ["postgres", "minio"]
+    tables: ["documents", "document_versions", "document_fragments"]
+
+  - id: "versioning"
+    name: "Versioning"
+    path: "backend/apps/versioning"
+    entrypoint: "app/main.py"
+    port: 8005
+    databases: ["postgres"]
+
+  - id: "obligation-extractor"
+    name: "Obligation Extractor"
+    path: "backend/apps/obligation_extractor"
+    entrypoint: "app/main.py"
+    port: 8006
+    databases: ["postgres"]
+    tables: ["norms", "obligations", "obligation_sources"]
+
+  - id: "graph-service"
+    name: "Graph Service"
+    path: "backend/apps/graph_service"
+    entrypoint: "app/main.py"
+    port: 8007
+    databases: ["neo4j"]
+
+  - id: "vector-indexer"
+    name: "Vector Indexer"
+    path: "backend/apps/vector_indexer"
+    entrypoint: "app/main.py"
+    port: 8008
+    databases: ["qdrant"]
+
+  - id: "retrieval"
+    name: "Retrieval"
+    path: "backend/apps/retrieval"
+    entrypoint: "app/main.py"
+    port: 8009
+    databases: ["qdrant", "postgres", "neo4j"]
+
+  - id: "answer-service"
+    name: "Answer Service"
+    path: "backend/apps/answer_service"
+    entrypoint: "app/main.py"
+    port: 8010
+    databases: ["postgres"]
+    tables: ["answer_sessions", "answer_evidence"]
+
+  - id: "verification"
+    name: "Verification"
+    path: "backend/apps/verification"
+    entrypoint: "app/main.py"
+    port: 8011
+    databases: []
+
+  - id: "doc-check"
+    name: "Document Check"
+    path: "backend/apps/doc_check"
+    entrypoint: "app/main.py"
+    port: 8012
+    databases: ["postgres", "minio"]
+    tables: ["internal_documents", "internal_document_versions", "doc_check_jobs", "doc_check_findings"]
+
+  - id: "drafting"
+    name: "Drafting"
+    path: "backend/apps/drafting"
+    entrypoint: "app/main.py"
+    port: 8013
+    databases: ["postgres"]
+
+  - id: "export"
+    name: "Export"
+    path: "backend/apps/export"
+    entrypoint: "app/main.py"
+    port: 8014
+    databases: ["minio"]
+
+  - id: "scheduler"
+    name: "Scheduler"
+    path: "backend/apps/scheduler"
+    entrypoint: "app/main.py"
+    port: 8015
+    databases: ["redis"]
+
+  - id: "workers"
+    name: "Workers"
+    path: "backend/apps/workers"
+    entrypoint: "app/main.py"
+    port: 8016
+    databases: ["redis"]
+
+databases:
+  postgres:
+    type: "relational"
+    container: "postgres:16"
+    port: 5432
+    default_db: "podft"
+  neo4j:
+    type: "graph"
+    container: "neo4j:5"
+    port: 7687
+  qdrant:
+    type: "vector"
+    container: "qdrant/qdrant"
+    port: 6333
+  minio:
+    type: "object-storage"
+    container: "minio/minio"
+    port: 9000
+  redis:
+    type: "cache-queue"
+    container: "redis:7"
+    port: 6379
+
+shared_modules:
+  - id: "llm-provider-router"
+    path: "backend/shared/llm/provider_router.py"
+    responsibility: "All LLM calls go through this module. No direct calls from feature code."
+  - id: "settings"
+    path: "backend/shared/settings.py"
+    responsibility: "Central pydantic-settings from .env"
+  - id: "db-clients"
+    path: "backend/shared/db/"
+    responsibility: "Async database clients: postgres, neo4j, qdrant, redis"
+  - id: "logging"
+    path: "backend/shared/logging.py"
+    responsibility: "Structured logging config for all services"
+  - id: "security"
+    path: "backend/shared/security.py"
+    responsibility: "JWT, password hashing, API key verification"
+  - id: "models"
+    path: "backend/shared/models/"
+    responsibility: "Shared enums, ID types, error codes"
+  - id: "events"
+    path: "backend/shared/events/"
+    responsibility: "Transactional outbox, event schemas"

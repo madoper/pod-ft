@@ -1,0 +1,97 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: podft
+          POSTGRES_PASSWORD: podft-secret
+          POSTGRES_DB: podft
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Type check
+        run: uv run mypy backend/
+
+      - name: Test
+        run: uv run pytest
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: podft
+          POSTGRES_PASSWORD: podft-secret
+          POSTGRES_DB: podft
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push all service images
+        run: |
+          SERVICES="gateway auth_billing source_registry crawler parser versioning obligation_extractor graph_service retrieval verification answer_service vector_indexer doc_check drafting export scheduler workers"
+          for svc in $SERVICES; do
+            dockerfile="backend/apps/$svc/Dockerfile"
+            if [ -f "$dockerfile" ]; then
+              docker build -t $REGISTRY/$IMAGE_NAME/$svc:latest -f "$dockerfile" .
+              docker push $REGISTRY/$IMAGE_NAME/$svc:latest
+            fi
+          done
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 5.35.87.172
+          username: root
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            cd /opt/podft
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml pull
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --force-recreate
+            docker image prune -f
+            echo "Deploy complete: $(date)"

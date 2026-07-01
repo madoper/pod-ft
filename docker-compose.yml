@@ -1,0 +1,346 @@
+__anchor__ = "docker-compose"
+# schema-ref: project-schema.yaml#/databases
+
+name: podft
+
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: podft-neo4j
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-podft-neo4j}
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "podft-neo4j", "RETURN 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - podft-net
+
+  postgres:
+    image: postgres:16
+    container_name: podft-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-podft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-podft-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-podft}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U podft"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - podft-net
+
+  qdrant:
+    image: qdrant/qdrant
+    container_name: podft-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - podft-net
+
+  minio:
+    image: minio/minio
+    container_name: podft-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-podft-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-podft-minio-secret}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - podft-net
+
+  redis:
+    image: redis:7
+    container_name: podft-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - podft-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: podft-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_ssl:/etc/nginx/ssl
+    depends_on:
+      - gateway
+    networks:
+      - podft-net
+
+  gateway:
+    build:
+      context: .
+      dockerfile: backend/apps/gateway/Dockerfile
+    container_name: podft-gateway
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      QDRANT_HOST: qdrant
+      MINIO_HOST: minio
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - podft-net
+
+  auth-billing:
+    build:
+      context: .
+      dockerfile: backend/apps/auth_billing/Dockerfile
+    container_name: podft-auth-billing
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - podft-net
+
+  source-registry:
+    build:
+      context: .
+      dockerfile: backend/apps/source_registry/Dockerfile
+    container_name: podft-source-registry
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8002:8002"
+    networks:
+      - podft-net
+
+  crawler:
+    build:
+      context: .
+      dockerfile: backend/apps/crawler/Dockerfile
+    container_name: podft-crawler
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8003:8003"
+    networks:
+      - podft-net
+
+  parser:
+    build:
+      context: .
+      dockerfile: backend/apps/parser/Dockerfile
+    container_name: podft-parser
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8004:8004"
+    networks:
+      - podft-net
+
+  versioning:
+    build:
+      context: .
+      dockerfile: backend/apps/versioning/Dockerfile
+    container_name: podft-versioning
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      POSTGRES_HOST: postgres
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - podft-net
+
+  obligation-extractor:
+    build:
+      context: .
+      dockerfile: backend/apps/obligation_extractor/Dockerfile
+    container_name: podft-obligation-extractor
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8006:8006"
+    networks:
+      - podft-net
+
+  graph-service:
+    build:
+      context: .
+      dockerfile: backend/apps/graph_service/Dockerfile
+    container_name: podft-graph-service
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8007:8007"
+    networks:
+      - podft-net
+
+  vector-indexer:
+    build:
+      context: .
+      dockerfile: backend/apps/vector_indexer/Dockerfile
+    container_name: podft-vector-indexer
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      QDRANT_HOST: qdrant
+    ports:
+      - "8008:8008"
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    networks:
+      - podft-net
+
+  retrieval:
+    build:
+      context: .
+      dockerfile: backend/apps/retrieval/Dockerfile
+    container_name: podft-retrieval
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8009:8009"
+    networks:
+      - podft-net
+
+  verification:
+    build:
+      context: .
+      dockerfile: backend/apps/verification/Dockerfile
+    container_name: podft-verification
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8010:8010"
+    networks:
+      - podft-net
+
+  answer-service:
+    build:
+      context: .
+      dockerfile: backend/apps/answer_service/Dockerfile
+    container_name: podft-answer-service
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8011:8011"
+    networks:
+      - podft-net
+
+  doc-check:
+    build:
+      context: .
+      dockerfile: backend/apps/doc_check/Dockerfile
+    container_name: podft-doc-check
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8012:8012"
+    networks:
+      - podft-net
+
+  drafting:
+    build:
+      context: .
+      dockerfile: backend/apps/drafting/Dockerfile
+    container_name: podft-drafting
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8013:8013"
+    networks:
+      - podft-net
+
+  export:
+    build:
+      context: .
+      dockerfile: backend/apps/export/Dockerfile
+    container_name: podft-export
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8014:8014"
+    networks:
+      - podft-net
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: backend/apps/scheduler/Dockerfile
+    container_name: podft-scheduler
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8015:8015"
+    networks:
+      - podft-net
+
+  workers:
+    build:
+      context: .
+      dockerfile: backend/apps/workers/Dockerfile
+    container_name: podft-workers
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8016:8016"
+    networks:
+      - podft-net
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  minio_data:
+  redis_data:
+  neo4j_data:
+  nginx_ssl:
+
+networks:
+  podft-net:
+    driver: bridge

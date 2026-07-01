@@ -1,0 +1,9 @@
+# Override for VPS deployment (1 GB RAM — exclude Neo4j)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d
+
+name: podft
+
+services:
+  neo4j:
+    profiles:
+      - never

@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "podft-gateway"
+    static_configs:
+      - targets: ["gateway:8000"]
+
+  - job_name: "podft-postgres"
+    static_configs:
+      - targets: ["postgres:9187"]
+
+  - job_name: "podft-redis"
+    static_configs:
+      - targets: ["redis:9121"]

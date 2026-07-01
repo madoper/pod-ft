@@ -1,0 +1,241 @@
+__anchor__ = "retrieval"
+# schema-ref: project-schema.yaml#/services/8
+
+import math
+import re
+from collections import Counter
+from typing import Any
+
+
+class RetrievalService:
+    """Hybrid retrieval: BM25-like keyword search + Qdrant vector search.
+
+    BM25 runs on in-memory index for speed. Qdrant vector search runs
+    as a parallel strategy; results are merged via reciprocal rank fusion.
+    """
+
+    def __init__(self, qdrant_client: Any | None = None) -> None:
+        self._fragments: dict[str, dict[str, Any]] = {}
+        self._inverted_index: dict[str, dict[str, float]] = {}
+        self._total_docs = 0
+        self._qdrant = qdrant_client
+
+    async def index_fragments(self, fragments: list[dict[str, Any]]) -> int:
+        for f in fragments:
+            fid = f["fragment_id"]
+            text = f.get("fragment_text", "")
+            self._fragments[fid] = f
+            # Build simple TF index
+            tokens = self._tokenize(text)
+            tf = Counter(tokens)
+            self._inverted_index[fid] = dict(tf)
+        self._total_docs = len(self._fragments)
+        return len(fragments)
+
+    async def search(
+        self,
+        query: str,
+        subject_type: str | None = None,  # noqa: ARG002
+        regulator: str | None = None,
+        top_k: int = 10,
+        min_confidence: float = 0.0,  # noqa: ARG002
+    ) -> list[dict[str, Any]]:
+        if not self._fragments and not self._qdrant:
+            return self._fallback_search(query, top_k)
+
+        # Strategy 1: BM25 on in-memory index
+        bm25_results = await self._search_bm25(query, regulator, top_k)
+
+        # Strategy 2: Qdrant vector search
+        qdrant_results = await self._search_qdrant(query, top_k)
+
+        if not bm25_results and not qdrant_results:
+            return self._substring_fallback(query, top_k, regulator)
+
+        # Fuse with reciprocal rank fusion
+        fused = self._rrf_fuse(bm25_results, qdrant_results, top_k)
+        return fused
+
+    async def _search_bm25(
+        self, query: str, regulator: str | None, top_k: int
+    ) -> list[dict[str, Any]]:
+        if not self._fragments:
+            return []
+
+        query_tokens = self._tokenize(query)
+        scores: list[tuple[str, float]] = []
+
+        for fid, fragment in self._fragments.items():
+            score = self._bm25_score(fid, query_tokens)
+            if score <= 0:
+                continue
+            if regulator and fragment.get("source_domain") != regulator:
+                continue
+            fragment_text = fragment.get("fragment_text", "")
+            score += self._phrase_boost(query, fragment_text)
+            scores.append((fid, score))
+
+        scores.sort(key=lambda x: x[1], reverse=True)
+        top = scores[:top_k]
+
+        results = []
+        for fid, score in top:
+            frag = self._fragments[fid]
+            results.append(self._make_result(frag, score))
+        return results
+
+    async def _search_qdrant(
+        self, query: str, top_k: int
+    ) -> list[dict[str, Any]]:
+        if not self._qdrant:
+            return []
+        try:
+            from backend.apps.vector_indexer.app.services.indexer_service import (
+                IndexerService,
+            )
+            svc = IndexerService(qdrant=self._qdrant)
+            return await svc.search(query=query, top_k=top_k)
+        except Exception:
+            return []
+
+    def _rrf_fuse(
+        self,
+        bm25: list[dict[str, Any]],
+        qdrant: list[dict[str, Any]],
+        top_k: int,
+        k: int = 60,
+    ) -> list[dict[str, Any]]:
+        """Reciprocal rank fusion of two result lists."""
+        scores: dict[str, float] = {}
+        store: dict[str, dict[str, Any]] = {}
+
+        for rank, r in enumerate(bm25):
+            fid = r["fragment_id"]
+            scores[fid] = scores.get(fid, 0) + 1.0 / (k + rank + 1)
+            store[fid] = r
+
+        for rank, r in enumerate(qdrant):
+            fid = r["fragment_id"]
+            scores[fid] = scores.get(fid, 0) + 1.0 / (k + rank + 1)
+            if fid not in store:
+                store[fid] = r
+
+        ranked = sorted(store.values(), key=lambda x: scores.get(x["fragment_id"], 0), reverse=True)
+        return ranked[:top_k]
+
+    def _make_result(self, frag: dict[str, Any], score: float) -> dict[str, Any]:
+        return {
+            "fragment_id": frag["fragment_id"],
+            "document_title": frag.get("document_title"),
+            "fragment_text": frag.get("fragment_text", ""),
+            "citation_label": frag.get("citation_label", ""),
+            "score": round(score, 4),
+            "tier": frag.get("tier", 1),
+            "confidence": frag.get("confidence", 0.8),
+            "source_domain": frag.get("source_domain"),
+        }
+
+    async def list_fragments(self) -> list[dict[str, Any]]:
+        return list(self._fragments.values())
+
+    async def remove_fragment(self, fragment_id: str) -> None:
+        self._fragments.pop(fragment_id, None)
+        self._inverted_index.pop(fragment_id, None)
+        self._total_docs = len(self._fragments)
+
+    def _tokenize(self, text: str) -> list[str]:
+        text = text.lower()
+        tokens = re.findall(r"\w{3,}", text)
+        stop_words = {
+            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to",
+            "for", "of", "by", "with", "is", "are", "was", "were", "be",
+            "been", "being", "have", "has", "had", "do", "does", "did",
+            "will", "would", "can", "could", "may", "might", "shall",
+            "should", "это", "не", "как", "что", "для", "в", "на", "с",
+            "по", "от", "из", "к", "у", "за", "о", "об", "при",
+        }
+        return [t for t in tokens if t not in stop_words and len(t) > 2]
+
+    def _bm25_score(self, fid: str, query_tokens: list[str]) -> float:
+        k1 = 1.5
+        b = 0.75
+        doc_tf = self._inverted_index.get(fid, {})
+        doc_len = sum(doc_tf.values()) or 1
+        avg_doc_len = self._total_docs if self._total_docs > 0 else 1
+
+        score = 0.0
+        for token in set(query_tokens):
+            tf = doc_tf.get(token, 0)
+            if tf == 0:
+                continue
+            df = sum(1 for d in self._inverted_index.values() if token in d)
+            idf = math.log((self._total_docs - df + 0.5) / (df + 0.5) + 1)
+            score += idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * doc_len / avg_doc_len))
+
+        return score
+
+    def _phrase_boost(self, query: str, text: str) -> float:
+        """Boost score if whole query phrase appears in fragment text."""
+        boost = 0.0
+        phrases = re.findall(r'"([^"]+)"', query)
+        if not phrases:
+            phrases = [query]
+        for phrase in phrases:
+            if phrase.lower() in text.lower():
+                boost += 2.0
+        return boost
+
+    def _fallback_search(self, query: str, top_k: int) -> list[dict[str, Any]]:
+        """Return mock results when no fragments are indexed."""
+        return [
+            {
+                "fragment_id": "mock-1",
+                "document_title": "Mock Document",
+                "fragment_text": f"Sample fragment matching query: {query}",
+                "citation_label": "фр. 1",
+                "score": 0.85,
+                "tier": 1,
+                "confidence": 0.85,
+                "source_domain": "fedsfm.ru",
+            },
+            {
+                "fragment_id": "mock-2",
+                "document_title": "Mock Document",
+                "fragment_text": f"Another relevant fragment about: {query}",
+                "citation_label": "фр. 2",
+                "score": 0.72,
+                "tier": 1,
+                "confidence": 0.72,
+                "source_domain": "cbr.ru",
+            },
+        ][:top_k]
+
+    def _substring_fallback(
+        self, query: str, top_k: int, regulator: str | None = None
+    ) -> list[dict[str, Any]]:
+        results = []
+        query_tokens = [t for t in re.findall(r"\w+", query.lower()) if len(t) > 2]
+        for fid, frag in self._fragments.items():
+            if regulator and frag.get("source_domain") != regulator:
+                continue
+            text = frag.get("fragment_text", "").lower()
+            frag_tokens = set(re.findall(r"\w+", text))
+            score = 0.0
+            for qt in query_tokens:
+                for ft in frag_tokens:
+                    if qt == ft or (len(qt) > 3 and len(ft) > 3 and (qt in ft or ft in qt)):
+                        score += 0.5
+                        break
+            if score > 0:
+                results.append({
+                    "fragment_id": fid,
+                    "document_title": frag.get("document_title"),
+                    "fragment_text": frag.get("fragment_text", ""),
+                    "citation_label": frag.get("citation_label", ""),
+                    "score": round(score, 4),
+                    "tier": frag.get("tier", 1),
+                    "confidence": frag.get("confidence", 0.8),
+                    "source_domain": frag.get("source_domain"),
+                })
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results[:top_k]
