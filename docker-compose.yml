@@ -1,4 +1,4 @@
-__anchor__ = "docker-compose"
+# __anchor__ = "docker-compose"
 # schema-ref: project-schema.yaml#/databases
 
 name: podft
