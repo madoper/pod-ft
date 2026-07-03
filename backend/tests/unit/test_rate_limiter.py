@@ -14,7 +14,7 @@ def app() -> FastAPI:
     async def test_endpoint():
         return {"status": "ok"}
 
-    app.add_middleware(RateLimitMiddleware, max_requests=5, window_sec=60)
+    app.add_middleware(RateLimitMiddleware, max_requests=5, window_sec=60)  # type: ignore[arg-type]
     return app
 
 

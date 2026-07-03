@@ -27,9 +27,9 @@ class RedisClient:
             )
             self._redis = Redis.from_pool(self._pool)
             await self._redis.ping()
-            logger.info("redis connected", host=settings.redis_host)
+            logger.info(f"redis connected: {settings.redis_host}")
         except Exception as e:
-            logger.warning("redis unavailable, rate limiting disabled", error=str(e))
+            logger.warning(f"redis unavailable, rate limiting disabled: {e}")
             self._pool = None
             self._redis = None
 
@@ -60,7 +60,10 @@ class RedisClient:
     async def get(self, key: str) -> str | None:
         if not self._redis:
             return None
-        return await self._redis.get(key)
+        val = await self._redis.get(key)
+        if isinstance(val, str):
+            return val
+        return None
 
     async def ttl(self, key: str) -> int:
         if not self._redis:

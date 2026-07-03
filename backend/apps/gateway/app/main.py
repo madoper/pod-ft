@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 
 from backend.apps.admin.app.routers.admin import router as admin_router
 from backend.apps.answer_service.app.routers.answer import router as answer_router
@@ -82,8 +82,7 @@ app.include_router(admin_router, prefix="/api/v1")
 
 
 @app.get("/metrics")
-async def metrics() -> RedirectResponse:
-    from fastapi.responses import Response
+async def metrics() -> Response:
     data = await metrics_endpoint()
     return Response(content=data, media_type="text/plain")
 
@@ -95,6 +94,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(RateLimitMiddleware, max_requests=100, window_sec=60)
+app.add_middleware(RateLimitMiddleware, max_requests=100, window_sec=60)  # type: ignore[arg-type]
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(MetricsMiddleware)

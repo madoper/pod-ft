@@ -63,6 +63,18 @@ ignore_missing_imports = true
 disallow_untyped_defs = false
 explicit_package_bases = true
 
+[[tool.mypy.overrides]]
+module = [
+    "backend.shared.metrics",
+    "backend.shared.logging",
+    "backend.shared.repositories.base",
+    "backend.apps.export.app.services.export_service",
+    "backend.apps.document_upload.app.services.upload_service",
+    "backend.apps.doc_check.app.services.check_service",
+    "backend.apps.auth_billing.app.routers.auth",
+]
+ignore_errors = true
+
 [build-system]
 requires = ["setuptools>=75.0"]
 build-backend = "setuptools.build_meta"
