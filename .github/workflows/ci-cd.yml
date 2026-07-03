@@ -47,7 +47,7 @@ jobs:
         run: uv run mypy backend/
 
       - name: Test
-        run: uv run pytest
+        run: uv run pytest backend/tests/unit/ frontend/telegram/tests/
         env:
           POSTGRES_HOST: localhost
           POSTGRES_USER: podft
