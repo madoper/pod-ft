@@ -80,7 +80,7 @@ jobs:
       - name: Build web frontend
         run: |
           cd frontend/web
-          npm ci
+          npm install
           npm run build
 
       - name: Build and push gateway image

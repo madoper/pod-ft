@@ -9,3 +9,4 @@ build/
 data/
 *.pem
 *.key
+node_modules/
