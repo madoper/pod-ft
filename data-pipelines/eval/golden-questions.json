@@ -1,0 +1,41 @@
+{
+  "description": "Golden question set for evaluating pod-ft RAG quality",
+  "version": "1.0",
+  "cases": [
+    {
+      "id": "aml-001",
+      "question": "Какие сроки направления сообщений в Росфинмониторинг по операциям с подозрительным характером?",
+      "expected_citations": ["115-ФЗ ст. 7", "262-ФЗ"],
+      "subject_type": "credit_organization",
+      "category": "reporting"
+    },
+    {
+      "id": "aml-002",
+      "question": "Каков порядок идентификации клиентов - физических лиц?",
+      "expected_citations": ["115-ФЗ ст. 7", "Положение 499-П"],
+      "subject_type": "credit_organization",
+      "category": "identification"
+    },
+    {
+      "id": "aml-003",
+      "question": "Какие требования к правилам внутреннего контроля (ПВК)?",
+      "expected_citations": ["115-ФЗ ст. 7"],
+      "subject_type": "credit_organization",
+      "category": "internal_control"
+    },
+    {
+      "id": "aml-004",
+      "question": "Каковы критерии обязательного контроля операций?",
+      "expected_citations": ["115-ФЗ ст. 6"],
+      "subject_type": "credit_organization",
+      "category": "monitoring"
+    },
+    {
+      "id": "aml-005",
+      "question": "Какая ответственность за непредставление сведений в Росфинмониторинг?",
+      "expected_citations": ["КОАП РФ ст. 15.27", "УК РФ ст. 174"],
+      "subject_type": "credit_organization",
+      "category": "liability"
+    }
+  ]
+}

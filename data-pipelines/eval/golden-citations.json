@@ -1,0 +1,22 @@
+{
+  "description": "Golden citation set for doc-check evaluation",
+  "version": "1.0",
+  "cases": [
+    {
+      "id": "doc-check-001",
+      "document_title": "Правила внутреннего контроля",
+      "document_type": "pvk",
+      "required_findings": ["matched_fragment"],
+      "minimum_fragments": 3,
+      "subject_type": "credit_organization"
+    },
+    {
+      "id": "doc-check-002",
+      "document_title": "Приказ о назначении ответственного сотрудника",
+      "document_type": "order",
+      "required_findings": ["matched_fragment"],
+      "minimum_fragments": 1,
+      "subject_type": "credit_organization"
+    }
+  ]
+}

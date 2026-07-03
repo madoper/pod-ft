@@ -26,3 +26,32 @@ class ProfileResponse(BaseModel):
     tenant_id: str
     role: str
     anchor: str = "auth-billing"
+
+
+class SubscriptionResponse(BaseModel):
+    tenant_id: str
+    tier: str
+    monthly_quota: int
+    usage_this_month: int
+    quota_remaining: int
+    anchor: str = "auth-billing"
+
+
+class UsageRecordRequest(BaseModel):
+    tenant_id: str
+    event_type: str
+    tokens_used: int = 0
+    cost: float = 0.0
+
+
+class UsageRecordResponse(BaseModel):
+    recorded: bool
+    event_type: str
+    anchor: str = "auth-billing"
+
+
+class QuotaCheckResponse(BaseModel):
+    allowed: bool
+    remaining: int
+    error_code: str | None = None
+    anchor: str = "auth-billing"

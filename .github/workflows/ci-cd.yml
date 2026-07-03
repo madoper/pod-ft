@@ -72,10 +72,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build web frontend
+        run: |
+          cd frontend/web
+          npm ci
+          npm run build
+
       - name: Build and push gateway image
         run: |
           docker build -t $REGISTRY/$IMAGE_NAME/gateway:latest -f backend/apps/gateway/Dockerfile .
           docker push $REGISTRY/$IMAGE_NAME/gateway:latest
+
+      - name: Build and push web-frontend image
+        run: |
+          docker build -t $REGISTRY/$IMAGE_NAME/web-frontend:latest -f frontend/web/Dockerfile frontend/web
+          docker push $REGISTRY/$IMAGE_NAME/web-frontend:latest
+
+      - name: Build and push telegram-bot image
+        run: |
+          docker build -t $REGISTRY/$IMAGE_NAME/telegram-bot:latest -f frontend/telegram/Dockerfile .
+          docker push $REGISTRY/$IMAGE_NAME/telegram-bot:latest
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
@@ -86,7 +107,8 @@ jobs:
           script: |
             cd /opt/podft
             git pull origin main
-            docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml pull gateway postgres qdrant redis minio nginx
+            if ! grep -q "BOT_TOKEN" .env 2>/dev/null; then echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" >> .env; fi
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml pull gateway web-frontend telegram-bot postgres qdrant redis minio
             docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml up -d --force-recreate
             docker image prune -f
             echo "Deploy complete: $(date)"

@@ -333,6 +333,44 @@ services:
     networks:
       - podft-net
 
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: frontend/telegram/Dockerfile
+    container_name: podft-telegram-bot
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN:-}
+      API_BASE_URL: ${API_BASE_URL:-http://gateway:8000/api/v1}
+    env_file:
+      - .env
+    depends_on:
+      - gateway
+    networks:
+      - podft-net
+    restart: unless-stopped
+
+  web-frontend:
+    build:
+      context: frontend/web
+      dockerfile: Dockerfile
+    container_name: podft-web-frontend
+    ports:
+      - "8080:80"
+    networks:
+      - podft-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: podft-prometheus
+    volumes:
+      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - podft-net
+    profiles: [never]  # optional on 1GB VPS
+
 volumes:
   postgres_data:
   qdrant_data:
@@ -340,6 +378,7 @@ volumes:
   redis_data:
   neo4j_data:
   nginx_ssl:
+  prometheus_data:
 
 networks:
   podft-net:

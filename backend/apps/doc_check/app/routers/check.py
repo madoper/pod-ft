@@ -16,7 +16,7 @@ _service = DocCheckService()
 
 @router.post("/check", response_model=CheckResponse)
 async def check_document(payload: CheckRequest) -> CheckResponse:
-    return await _service.run_check(
+    return await _service.submit_check(
         tenant_id=payload.tenant_id,
         document_text=payload.document_text,
         document_title=payload.document_title,

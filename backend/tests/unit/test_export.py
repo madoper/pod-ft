@@ -31,7 +31,8 @@ class TestExportService:
         assert result.anchor == "export"
 
     @pytest.mark.asyncio
-    async def test_export_docx_stub(self) -> None:
+    async def test_export_docx(self) -> None:
+        import base64
         svc = ExportService()
         result = await svc.export(ExportRequest(
             format="docx",
@@ -40,10 +41,12 @@ class TestExportService:
         ))
         assert result.format == "docx"
         assert result.filename.endswith(".docx")
-        assert "DOCX" in result.data
+        decoded = base64.b64decode(result.data)
+        assert decoded[:2] == b"PK"
 
     @pytest.mark.asyncio
-    async def test_export_pdf_stub(self) -> None:
+    async def test_export_pdf(self) -> None:
+        import base64
         svc = ExportService()
         result = await svc.export(ExportRequest(
             format="pdf",
@@ -51,9 +54,12 @@ class TestExportService:
             sections=[],
         ))
         assert result.format == "pdf"
+        decoded = base64.b64decode(result.data)
+        assert decoded[:4] == b"%PDF"
 
     @pytest.mark.asyncio
-    async def test_export_xlsx_stub(self) -> None:
+    async def test_export_xlsx(self) -> None:
+        import base64
         svc = ExportService()
         result = await svc.export(ExportRequest(
             format="xlsx",
@@ -61,6 +67,8 @@ class TestExportService:
             sections=[],
         ))
         assert result.format == "xlsx"
+        decoded = base64.b64decode(result.data)
+        assert decoded[:2] == b"PK"
 
     @pytest.mark.asyncio
     async def test_export_defaults_to_json(self) -> None:

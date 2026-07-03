@@ -57,3 +57,25 @@ def test_sources_active(client: httpx.Client) -> None:
 def test_root_redirect(client: httpx.Client) -> None:
     resp = client.get("/api/v1/docs")
     assert resp.status_code == 200
+
+
+def test_web_frontend_served(client: httpx.Client) -> None:
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert "pod-ft" in resp.text
+
+
+def test_web_frontend_serves_assets(client: httpx.Client) -> None:
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert "root" in resp.text or "div" in resp.text
+
+
+def test_api_cors_headers(client: httpx.Client) -> None:
+    resp = client.options(
+        "/api/v1/health",
+        headers={"Origin": "https://vectornode.ru"},
+    )
+    assert resp.status_code in (200, 204)
+    cors_origin = resp.headers.get("access-control-allow-origin", "")
+    assert cors_origin == "*" or cors_origin == "https://vectornode.ru"

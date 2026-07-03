@@ -6,11 +6,20 @@ scrape_configs:
   - job_name: "podft-gateway"
     static_configs:
       - targets: ["gateway:8000"]
+    metrics_path: "/metrics"
 
-  - job_name: "podft-postgres"
+  - job_name: "postgres"
     static_configs:
-      - targets: ["postgres:9187"]
+      - targets: ["postgres-exporter:9187"]
 
-  - job_name: "podft-redis"
+  - job_name: "redis"
     static_configs:
-      - targets: ["redis:9121"]
+      - targets: ["redis-exporter:9121"]
+
+  - job_name: "minio"
+    static_configs:
+      - targets: ["minio:9000"]
+
+  - job_name: "qdrant"
+    static_configs:
+      - targets: ["qdrant:6333"]

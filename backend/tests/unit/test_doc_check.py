@@ -13,7 +13,7 @@ def client() -> AsyncClient:
 
 
 @pytest.mark.asyncio
-async def test_check_document_no_fragments(client: AsyncClient) -> None:
+async def test_check_document_submit(client: AsyncClient) -> None:
     resp = await client.post("/api/v1/check", json={
         "tenant_id": "tenant-1",
         "document_text": "Тестовый внутренний документ",
@@ -23,38 +23,38 @@ async def test_check_document_no_fragments(client: AsyncClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert data["anchor"] == "doc-check"
-    assert data["status"] == "completed"
-    assert "coverage_summary" in data
+    assert data["status"] == "pending"
+    assert data["job_id"]
 
 
 @pytest.mark.asyncio
-async def test_check_document_with_fragments(client: AsyncClient) -> None:
+async def test_check_document_then_poll(client: AsyncClient) -> None:
     resp = await client.post("/api/v1/check", json={
         "tenant_id": "tenant-1",
         "document_text": "правила внутреннего контроля",
         "document_title": "ПВК",
     })
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["anchor"] == "doc-check"
-    assert data["status"] == "completed"
+    job_id = resp.json()["job_id"]
+
+    import asyncio
+    for _ in range(20):
+        poll = await client.get(f"/api/v1/check/{job_id}")
+        assert poll.status_code == 200
+        data = poll.json()
+        if data["status"] == "completed":
+            assert data["result"]["coverage_summary"]
+            assert "export_links" in data["result"]
+            assert len(data["result"]["export_links"]) == 4
+            formats = {el["format"] for el in data["result"]["export_links"]}
+            assert formats == {"json", "docx", "pdf", "xlsx"}
+            return
+        await asyncio.sleep(0.05)
+
+    raise AssertionError("Job did not complete in time")
 
 
 @pytest.mark.asyncio
 async def test_get_job_not_found(client: AsyncClient) -> None:
     resp = await client.get("/api/v1/check/nonexistent")
     assert resp.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_get_job_found(client: AsyncClient) -> None:
-    check_resp = await client.post("/api/v1/check", json={
-        "tenant_id": "tenant-1",
-        "document_text": "test",
-        "document_title": "Test",
-    })
-    job_id = check_resp.json()["job_id"]
-    resp = await client.get(f"/api/v1/check/{job_id}")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "completed"

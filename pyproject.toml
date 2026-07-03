@@ -24,6 +24,11 @@ dependencies = [
     "lxml>=5.3.0",
     "qdrant-client>=1.12.0",
     "neo4j>=5.23.0",
+    "python-docx>=1.1.0",
+    "openpyxl>=3.1.0",
+    "fpdf2>=2.8.0",
+    "python-multipart>=0.0.12",
+    "prometheus-client>=0.21.0",
 ]
 
 [dependency-groups]
@@ -34,6 +39,7 @@ dev = [
     "ruff>=0.8.0",
     "mypy>=1.13.0",
     "pre-commit>=4.0.0",
+    "python-telegram-bot>=21.0",
 ]
 
 [tool.ruff]
@@ -45,6 +51,10 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "C4", "EM", "TD"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"backend/apps/document_upload/app/routers/upload.py" = ["B008"]
+"backend/tests/unit/test_doc_check.py" = ["EM101"]
+"frontend/telegram/handlers/commands.py" = ["ARG001"]
+"frontend/telegram/tests/conftest.py" = ["ARG002"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -53,7 +63,15 @@ ignore_missing_imports = true
 disallow_untyped_defs = false
 explicit_package_bases = true
 
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backend*", "frontend*"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["backend/tests"]
+testpaths = ["backend/tests", "frontend/telegram/tests"]
 python_files = ["test_*.py"]

@@ -1,9 +1,8 @@
 # Override for 1GB VPS — monolithic mode
-# Only gateway runs (all 41 endpoints), no individual service containers
+# Only gateway + frontend services run, no backend microservice containers
 # Usage: docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml up -d
 
 services:
-  # Exclude all 16 individual services — gateway handles everything
   neo4j:
     profiles: [never]
 
@@ -57,3 +56,5 @@ services:
 
   workers:
     profiles: [never]
+
+  # Frontend services run alongside the monolithic gateway

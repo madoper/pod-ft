@@ -1,7 +1,6 @@
 __anchor__ = "drafting"
-# schema-ref: project-schema.yaml#/services/13
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from backend.apps.drafting.app.schemas.draft import (
     DraftRequest,
@@ -20,3 +19,16 @@ async def generate_draft(payload: DraftRequest) -> DraftResponse:
         subject_type=payload.subject_type,
         context=payload.context,
     )
+
+
+@router.get("/draft/{draft_id}", response_model=DraftResponse)
+async def get_draft(draft_id: str) -> DraftResponse:
+    result = await _service.get_draft(draft_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    return result
+
+
+@router.get("/drafts", response_model=list[DraftResponse])
+async def list_drafts() -> list[DraftResponse]:
+    return await _service.list_drafts()

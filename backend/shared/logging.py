@@ -1,8 +1,8 @@
 __anchor__ = "logging"
-# schema-ref: project-schema.yaml#/shared_modules/3
 
 import logging
 import sys
+import uuid
 
 import structlog
 
@@ -31,3 +31,32 @@ def configure_logging() -> None:
 
 
 logger = structlog.get_logger()
+
+
+class RequestLoggingMiddleware:
+    """ASGI middleware that adds trace_id to request scope and logs each request."""
+
+    def __init__(self, app: callable) -> None:
+        self.app = app
+
+    async def __call__(self, scope: dict, receive: callable, send: callable) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        trace_id = str(uuid.uuid4())[:8]
+        scope["trace_id"] = trace_id
+
+        async def wrapped_send(message: dict) -> None:
+            if message.get("type") == "http.response.start":
+                status = message.get("status", 500)
+                logger.info(
+                    "http_request",
+                    trace_id=trace_id,
+                    method=scope.get("method"),
+                    path=scope.get("path"),
+                    status=status,
+                )
+            await send(message)
+
+        await self.app(scope, receive, wrapped_send)

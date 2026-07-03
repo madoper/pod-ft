@@ -265,6 +265,18 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- drafts
+CREATE TABLE IF NOT EXISTS drafts (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id           UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    title               TEXT NOT NULL,
+    draft_type          TEXT NOT NULL,
+    content_json        JSONB,
+    status              TEXT NOT NULL DEFAULT 'draft',
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- admin_overrides
 CREATE TABLE IF NOT EXISTS admin_overrides (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),

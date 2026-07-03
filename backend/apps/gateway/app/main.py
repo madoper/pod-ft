@@ -5,12 +5,16 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
+from backend.apps.admin.app.routers.admin import router as admin_router
 from backend.apps.answer_service.app.routers.answer import router as answer_router
 from backend.apps.auth_billing.app.routers.auth import router as auth_router
+from backend.apps.changes.app.routers.changes import router as changes_router
 from backend.apps.crawler.app.routers.crawl import router as crawl_router
 from backend.apps.doc_check.app.routers.check import router as check_router
+from backend.apps.document_upload.app.routers.upload import router as upload_router
 from backend.apps.drafting.app.routers.draft import router as draft_router
 from backend.apps.export.app.routers.export import router as export_router
 from backend.apps.gateway.app.routers import health
@@ -24,14 +28,19 @@ from backend.apps.vector_indexer.app.routers.index import router as index_router
 from backend.apps.verification.app.routers.verify import router as verify_router
 from backend.apps.versioning.app.routers.version import router as version_router
 from backend.apps.workers.app.routers.job import router as job_router
-from backend.shared.logging import configure_logging, logger
+from backend.shared.db.redis import redis_client
+from backend.shared.logging import RequestLoggingMiddleware, configure_logging, logger
+from backend.shared.metrics import MetricsMiddleware, metrics_endpoint
+from backend.shared.rate_limiter import RateLimitMiddleware
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
     logger.info("gateway starting", anchor="gateway")
+    await redis_client.connect()
     yield
+    await redis_client.disconnect()
     logger.info("gateway stopped", anchor="gateway")
 
 
@@ -67,3 +76,25 @@ app.include_router(index_router, prefix="/api/v1")
 app.include_router(check_router, prefix="/api/v1")
 app.include_router(draft_router, prefix="/api/v1")
 app.include_router(export_router, prefix="/api/v1")
+app.include_router(upload_router, prefix="/api/v1")
+app.include_router(changes_router, prefix="/api/v1")
+app.include_router(admin_router, prefix="/api/v1")
+
+
+@app.get("/metrics")
+async def metrics() -> RedirectResponse:
+    from fastapi.responses import Response
+    data = await metrics_endpoint()
+    return Response(content=data, media_type="text/plain")
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(RateLimitMiddleware, max_requests=100, window_sec=60)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(MetricsMiddleware)

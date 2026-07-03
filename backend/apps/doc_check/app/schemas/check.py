@@ -22,6 +22,12 @@ class Finding(BaseModel):
     confidence: float = 0.0
 
 
+class ExportLink(BaseModel):
+    format: str
+    url: str
+    label: str
+
+
 class CheckResponse(BaseModel):
     job_id: str
     status: str
@@ -29,6 +35,7 @@ class CheckResponse(BaseModel):
     findings: list[Finding]
     coverage_summary: str
     created_at: str
+    export_links: list[ExportLink] = []
     anchor: str = "doc-check"
 
 
