@@ -367,6 +367,14 @@ select {
   background: #b71c1c;
 }
 
+.btn-cancel {
+  background: #757575;
+}
+
+.btn-cancel:hover {
+  background: #616161;
+}
+
 .template-card {
   padding: 1rem;
   margin: 0.75rem 0;
