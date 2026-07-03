@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { SubscriptionInfo } from "../api";
 import { fetchSubscription, fetchQuota } from "../api";
 

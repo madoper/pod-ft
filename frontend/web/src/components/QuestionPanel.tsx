@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import type { CitationLabel } from "./api";
+import type { CitationLabel } from "../api";
 
 interface Props {
   onAnswer: (answer: string, evidence: CitationLabel[]) => void;
@@ -24,7 +24,7 @@ export default function QuestionPanel({
     setLoading(true);
     onAnswer("", []);
     try {
-      const { askQuestion } = await import("./api");
+      const { askQuestion } = await import("../api");
       const data = await askQuestion(q);
       onAnswer(data.answer, data.evidence);
     } catch (err: any) {
