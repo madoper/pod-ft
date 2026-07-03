@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 
 from backend.apps.admin.app.routers.admin import router as admin_router
+from backend.apps.tenant_profile.app.routers.profile import router as tenant_profile_router
 from backend.apps.answer_service.app.routers.answer import router as answer_router
 from backend.apps.auth_billing.app.routers.auth import router as auth_router
 from backend.apps.changes.app.routers.changes import router as changes_router
@@ -79,6 +80,7 @@ app.include_router(export_router, prefix="/api/v1")
 app.include_router(upload_router, prefix="/api/v1")
 app.include_router(changes_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(tenant_profile_router, prefix="/api/v1")
 
 
 @app.get("/metrics")

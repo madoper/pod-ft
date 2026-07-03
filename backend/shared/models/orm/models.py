@@ -45,6 +45,17 @@ class InternalDocumentModel(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 
+class SubjectProfileModel(Base):
+    __tablename__ = "subject_profiles"
+
+    id = Column(SA_Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(SA_Uuid, nullable=False)
+    subject_type = Column(String(100), nullable=False)
+    regulator = Column(String(255), nullable=True)
+    extra_criteria = Column(JSONB, nullable=True, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+
+
 class DraftModel(Base):
     __tablename__ = "drafts"
 

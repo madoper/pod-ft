@@ -145,6 +145,18 @@ services:
     networks:
       - podft-net
 
+  tenant-profile:
+    build:
+      context: .
+      dockerfile: backend/apps/tenant_profile/Dockerfile
+    container_name: podft-tenant-profile
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "8022:8022"
+    networks:
+      - podft-net
+
   source-registry:
     build:
       context: .

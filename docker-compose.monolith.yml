@@ -54,6 +54,9 @@ services:
   scheduler:
     profiles: [never]
 
+  tenant-profile:
+    profiles: [never]
+
   workers:
     profiles: [never]
 

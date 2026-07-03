@@ -1,20 +1,30 @@
 __anchor__ = "llm-provider-router"
-# schema-ref: project-schema.yaml#/shared_modules/0
 
-from typing import Any, Protocol
+from typing import Protocol
 
+from backend.shared.llm.clients.base import BaseLlmClient
+from backend.shared.llm.clients.openai import OpenAiClient, YandexGptClient
 from backend.shared.llm.contracts import LlmRequest, LlmResponse
+from backend.shared.llm.prompts.drafting import build_drafting_prompt
+from backend.shared.llm.prompts.extraction import build_extraction_prompt
+from backend.shared.llm.prompts.verification import build_verification_prompt
+from backend.shared.settings import settings
 
 
 class _PolicyEngine(Protocol):
     def select(self, task_type: str) -> list[str]: ...
 
 
+_drafting_prompt = build_drafting_prompt
+_extraction_prompt = build_extraction_prompt
+_verification_prompt = build_verification_prompt
+
+
 class LlmProviderRouter:
     """All LLM calls go through this module. No direct calls from feature code."""
 
     def __init__(
-        self, providers: dict[str, Any], policy_engine: _PolicyEngine | None = None
+        self, providers: dict[str, BaseLlmClient], policy_engine: _PolicyEngine | None = None
     ) -> None:
         self._providers = providers
         self._policy_engine = policy_engine
@@ -29,9 +39,48 @@ class LlmProviderRouter:
         for provider_name in candidates:
             client = self._providers[provider_name]
             try:
-                return await client.invoke(request)  # type: ignore[no-any-return]
+                return await client.invoke(request)
             except Exception as exc:
                 last_error = exc
                 continue
         msg = f"All providers failed for task={request.task_type}: {last_error}"
         raise RuntimeError(msg)
+
+
+class MockProvider(BaseLlmClient):
+    """Fallback when no LLM API key is configured. Returns canned responses."""
+
+    async def invoke(self, request: LlmRequest) -> LlmResponse:
+        task = request.task_type
+        if task == "drafting":
+            return LlmResponse(
+                content='{"summary": "Демо-ответ", "citations_used": [], "gaps": []}',
+                model_used="mock",
+            )
+        if task == "verification":
+            return LlmResponse(
+                content='{"is_supported": true, "unsupported_claims": [], "missing_citations": [], "confidence": 1.0, "explanation": "Mock verifier"}',  # noqa: E501
+                model_used="mock",
+            )
+        if task == "extraction":
+            return LlmResponse(
+                content='{"norms": [], "obligations": []}',
+                model_used="mock",
+            )
+        return LlmResponse(content="{}", model_used="mock")
+
+
+def create_llm_router() -> LlmProviderRouter:
+    """Factory: creates a configured LlmProviderRouter based on settings."""
+    providers: dict[str, BaseLlmClient] = {}
+
+    if settings.llm_api_key:
+        if settings.llm_provider == "openai":
+            providers["openai"] = OpenAiClient()
+        elif settings.llm_provider == "yandexgpt":
+            providers["yandexgpt"] = YandexGptClient()
+
+    if not providers:
+        providers["mock"] = MockProvider()
+
+    return LlmProviderRouter(providers)
