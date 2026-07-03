@@ -116,3 +116,86 @@ export async function fetchQuota(userId: string): Promise<any | null> {
   if (!res.ok) return null;
   return res.json();
 }
+
+export interface SourceItem {
+  id: string;
+  domain: string;
+  source_type: string;
+  regulator_name: string;
+  tier: number;
+  is_active: boolean;
+}
+
+export async function fetchSourcesDetail(): Promise<SourceItem[]> {
+  const res = await fetch(`${API_BASE}/sources`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.sources || [];
+}
+
+export interface ChangeItem {
+  change_id: string;
+  document_id: string;
+  document_title: string;
+  change_type: string;
+  summary: string;
+  version_from?: string;
+  version_to?: string;
+}
+
+export async function fetchChanges(fromDate?: string): Promise<ChangeItem[]> {
+  const params = fromDate ? `?from_date=${fromDate}` : "";
+  const res = await fetch(`${API_BASE}/changes${params}`);
+  if (!res.ok) return [];
+  return res.json().then((d) => d.items || []);
+}
+
+export interface SubjectProfileDto {
+  id?: string;
+  subject_type: string;
+  regulator?: string;
+  extra_criteria?: Record<string, unknown>;
+  created_at?: string;
+}
+
+export async function fetchProfiles(tenantId: string): Promise<SubjectProfileDto[]> {
+  const res = await fetch(`${API_BASE}/tenant-profile/by-tenant/${tenantId}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.profiles || [];
+}
+
+export async function createProfile(
+  tenantId: string,
+  subjectType: string,
+  regulator?: string,
+): Promise<SubjectProfileDto | null> {
+  const res = await fetch(`${API_BASE}/tenant-profile`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tenant_id: tenantId, subject_type: subjectType, regulator }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function deleteProfile(profileId: string): Promise<boolean> {
+  const res = await fetch(`${API_BASE}/tenant-profile/${profileId}`, { method: "DELETE" });
+  return res.ok;
+}
+
+export interface TemplateInfo {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export async function fetchTemplates(): Promise<TemplateInfo[]> {
+  const res = await fetch(`${API_BASE}/drafts`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchUsageStats(): Promise<any> {
+  return { queries_today: 0, queries_this_month: 0, sources_count: 0, documents_count: 0 };
+}
