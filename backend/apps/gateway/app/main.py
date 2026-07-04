@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 
 from backend.apps.admin.app.routers.admin import router as admin_router
-from backend.apps.tenant_profile.app.routers.profile import router as tenant_profile_router
 from backend.apps.answer_service.app.routers.answer import router as answer_router
 from backend.apps.auth_billing.app.routers.auth import router as auth_router
 from backend.apps.changes.app.routers.changes import router as changes_router
@@ -25,11 +24,13 @@ from backend.apps.parser.app.routers.parse import router as parse_router
 from backend.apps.retrieval.app.routers.search import router as search_router
 from backend.apps.scheduler.app.routers.schedule import router as schedule_router
 from backend.apps.source_registry.app.routers.sources import router as sources_router
+from backend.apps.tenant_profile.app.routers.profile import router as tenant_profile_router
 from backend.apps.vector_indexer.app.routers.index import router as index_router
 from backend.apps.verification.app.routers.verify import router as verify_router
 from backend.apps.versioning.app.routers.version import router as version_router
 from backend.apps.workers.app.routers.job import router as job_router
 from backend.shared.db.redis import redis_client
+from backend.shared.idempotency import IdempotencyKeyMiddleware
 from backend.shared.logging import RequestLoggingMiddleware, configure_logging, logger
 from backend.shared.metrics import MetricsMiddleware, metrics_endpoint
 from backend.shared.rate_limiter import RateLimitMiddleware
@@ -96,6 +97,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(IdempotencyKeyMiddleware)
 app.add_middleware(RateLimitMiddleware, max_requests=100, window_sec=60)  # type: ignore[arg-type]
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(MetricsMiddleware)

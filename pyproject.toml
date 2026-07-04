@@ -52,6 +52,7 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "C4", "EM", "TD"]
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "backend/apps/document_upload/app/routers/upload.py" = ["B008"]
+"backend/migrations/versions/*.py" = ["E501"]
 "backend/tests/unit/test_doc_check.py" = ["EM101"]
 "frontend/telegram/handlers/commands.py" = ["ARG001"]
 "frontend/telegram/tests/conftest.py" = ["ARG002"]
@@ -68,6 +69,7 @@ module = [
     "backend.shared.metrics",
     "backend.shared.logging",
     "backend.shared.repositories.base",
+    "backend.shared.idempotency",
     "backend.apps.export.app.services.export_service",
     "backend.apps.document_upload.app.services.upload_service",
     "backend.apps.doc_check.app.services.check_service",

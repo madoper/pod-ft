@@ -22,6 +22,29 @@ class SchedulerService:
     def __init__(self) -> None:
         self._schedules: dict[str, dict[str, Any]] = {}
         self._history: dict[str, list[dict[str, Any]]] = {}
+        self._init_default_schedules()
+
+    def _init_default_schedules(self) -> None:
+        defaults: list[tuple[str, str, dict[str, Any], str]] = [
+            ("ingestion", "0 6 * * *", {}, "Daily regulatory ingestion at 6 AM"),
+            ("healthcheck", "*/30 * * * *", {}, "Healthcheck every 30 min"),
+        ]
+        for task_type, cron_expr, params, label in defaults:
+            sid = str(uuid.uuid4())
+            now = datetime.now(UTC).isoformat()
+            self._schedules[sid] = {
+                "schedule_id": sid,
+                "task_type": task_type,
+                "cron_expr": cron_expr,
+                "params": params,
+                "label": label,
+                "enabled": True,
+                "last_run": None,
+                "next_run": self._estimate_next_run(cron_expr),
+                "created_at": now,
+            }
+            self._history[sid] = []
+            logger.info("scheduler: created default schedule %s (%s)", label, sid)
 
     async def create_schedule(
         self,
@@ -89,7 +112,8 @@ class SchedulerService:
                 "result": None,
             }
             try:
-                result = await _execute_task(entry["task_type"], entry.get("params", {}))
+                raw = await _execute_task(entry["task_type"], entry.get("params", {}))
+                result = str(raw) if not isinstance(raw, str) else raw
                 item["status"] = "completed"
                 item["result"] = result
             except Exception as exc:
@@ -130,10 +154,6 @@ async def _execute_task(task_type: str, params: dict[str, Any]) -> dict[str, Any
         job = await svc.start_crawl(source_domain=source_domain, url=url, crawl_depth=1)
         return {"job_id": job["id"], "status": job["status"]}
     if task_type == "reindex":
-        from backend.apps.vector_indexer.app.services.indexer_service import (
-            IndexerService,
-        )
-        idx_svc = IndexerService()
         _ = params.get("collection")
         return {"status": "completed"}
     if task_type == "healthcheck":

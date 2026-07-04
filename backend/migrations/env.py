@@ -9,8 +9,11 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from backend.shared.db.base import Base
 from backend.shared.models.orm.models import (  # noqa: F401 — register all models
-    AuthUserModel, DocCheckJobModel, DraftModel,
-    InternalDocumentModel, SubjectProfileModel,
+    AuthUserModel,
+    DocCheckJobModel,
+    DraftModel,
+    InternalDocumentModel,
+    SubjectProfileModel,
 )
 from backend.shared.settings import settings
 

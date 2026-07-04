@@ -1,9 +1,20 @@
 __anchor__ = "tests"
 
+from collections.abc import Generator
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from backend.apps.verification.app.main import app
+from backend.shared.settings import settings
+
+
+@pytest.fixture(autouse=True)
+def _clear_llm_key() -> Generator[None, None, None]:
+    old = settings.llm_api_key
+    settings.llm_api_key = ""
+    yield
+    settings.llm_api_key = old
 
 
 @pytest.fixture

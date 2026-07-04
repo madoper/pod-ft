@@ -4,6 +4,7 @@ from typing import Protocol
 
 from backend.shared.llm.clients.base import BaseLlmClient
 from backend.shared.llm.clients.openai import OpenAiClient, YandexGptClient
+from backend.shared.llm.clients.openrouter import OpenRouterClient
 from backend.shared.llm.contracts import LlmRequest, LlmResponse
 from backend.shared.llm.prompts.drafting import build_drafting_prompt
 from backend.shared.llm.prompts.extraction import build_extraction_prompt
@@ -79,6 +80,8 @@ def create_llm_router() -> LlmProviderRouter:
             providers["openai"] = OpenAiClient()
         elif settings.llm_provider == "yandexgpt":
             providers["yandexgpt"] = YandexGptClient()
+        elif settings.llm_provider == "openrouter":
+            providers["openrouter"] = OpenRouterClient()
 
     if not providers:
         providers["mock"] = MockProvider()

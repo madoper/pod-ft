@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import type { CitationLabel } from "../api";
 
 interface Props {
@@ -6,6 +6,7 @@ interface Props {
   onError: (error: string) => void;
   loading: boolean;
   setLoading: (v: boolean) => void;
+  initialQuestion?: string;
 }
 
 export default function QuestionPanel({
@@ -13,8 +14,13 @@ export default function QuestionPanel({
   onError,
   loading,
   setLoading,
+  initialQuestion,
 }: Props) {
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState(initialQuestion || "");
+
+  useEffect(() => {
+    if (initialQuestion) setQuestion(initialQuestion);
+  }, [initialQuestion]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

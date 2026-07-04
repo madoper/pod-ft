@@ -4,6 +4,7 @@ import pytest
 
 from backend.shared.llm.contracts import LlmRequest
 from backend.shared.llm.provider_router import MockProvider, create_llm_router
+from backend.shared.settings import settings
 
 
 @pytest.mark.asyncio
@@ -43,7 +44,12 @@ async def test_mock_provider_unknown() -> None:
 
 @pytest.mark.asyncio
 async def test_create_llm_router_no_api_key() -> None:
-    router = create_llm_router()
-    request = LlmRequest(task_type="drafting", prompt="Test")
-    response = await router.invoke(request)
-    assert response.model_used == "mock"
+    old_key = settings.llm_api_key
+    settings.llm_api_key = ""
+    try:
+        router = create_llm_router()
+        request = LlmRequest(task_type="drafting", prompt="Test")
+        response = await router.invoke(request)
+        assert response.model_used == "mock"
+    finally:
+        settings.llm_api_key = old_key

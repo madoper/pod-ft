@@ -1,5 +1,7 @@
 import { useState, useRef, type FormEvent } from "react";
-import { submitCheck } from "../api";
+import { submitCheck, getCheckResult } from "../api";
+import type { CheckResultData } from "../api";
+import DocCheckResultPage from "./DocCheckResultPage";
 
 const API_BASE = "/api/v1";
 
@@ -8,8 +10,9 @@ export default function DocCheckPanel() {
   const [docTitle, setDocTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<CheckResultData | null>(null);
   const [error, setError] = useState("");
+  const [jobId, setJobId] = useState("");
   const abortRef = useRef<AbortController | null>(null);
 
   async function handleSubmit(e: FormEvent) {
@@ -23,6 +26,7 @@ export default function DocCheckPanel() {
 
     try {
       const { job_id } = await submitCheck(docText, docTitle, "pvk");
+      setJobId(job_id);
       await streamStatus(job_id);
     } catch (err: any) {
       setError(err.message);
@@ -31,11 +35,11 @@ export default function DocCheckPanel() {
     }
   }
 
-  async function streamStatus(jobId: string) {
+  async function streamStatus(id: string) {
     abortRef.current = new AbortController();
 
     try {
-      const response = await fetch(`${API_BASE}/check/${jobId}/stream`, {
+      const response = await fetch(`${API_BASE}/check/${id}/stream`, {
         signal: abortRef.current.signal,
       });
       if (!response.ok || !response.body) {
@@ -67,27 +71,9 @@ export default function DocCheckPanel() {
               setProgress(data.progress);
             }
 
-            if (data.status === "completed" && data.result) {
-              const r = data.result;
-              setResult(
-                `Найдено фрагментов: ${r.total_fragments_found}\n` +
-                  (r.coverage_summary ? `\n${r.coverage_summary}\n` : "") +
-                  (r.findings?.length
-                    ? "\nРезультаты:\n" +
-                      r.findings
-                        .map(
-                          (f: any, i: number) =>
-                            `${i + 1}. [${f.finding_type}] ${(f.summary || "").slice(0, 150)}`,
-                        )
-                        .join("\n")
-                    : "") +
-                  (r.export_links?.length
-                    ? "\n\nЭкспорт:\n" +
-                      r.export_links
-                        .map((e: any) => `  ${e.format.toUpperCase()}: ${e.url}`)
-                        .join("\n")
-                    : ""),
-              );
+            if (data.status === "completed") {
+              const full = await getCheckResult(id);
+              if (full) setResult(full);
               return;
             }
 
@@ -105,9 +91,35 @@ export default function DocCheckPanel() {
     }
   }
 
+  async function handleLookup() {
+    if (!jobId.trim()) return;
+    setError("");
+    setResult(null);
+    const full = await getCheckResult(jobId.trim());
+    if (full) {
+      setResult(full);
+    } else {
+      setError("Результат не найден или проверка ещё не завершена");
+    }
+  }
+
   function handleCancel() {
     abortRef.current?.abort();
     setLoading(false);
+  }
+
+  function handleNewCheck() {
+    setResult(null);
+    setError("");
+    setProgress(0);
+  }
+
+  if (result) {
+    return (
+      <div className="panel">
+        <DocCheckResultPage result={result} onNewCheck={handleNewCheck} />
+      </div>
+    );
   }
 
   return (
@@ -149,7 +161,21 @@ export default function DocCheckPanel() {
         </div>
       )}
       {error && <div className="error">{error}</div>}
-      {result && <pre className="result">{result}</pre>}
+
+      <hr className="section-divider" />
+      <div className="lookup-section">
+        <h3>Просмотр существующего результата</h3>
+        <div className="filter-row">
+          <input
+            value={jobId}
+            onChange={(e) => setJobId(e.target.value)}
+            placeholder="Введите ID задачи..."
+          />
+          <button onClick={handleLookup} disabled={!jobId.trim()}>
+            Найти
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

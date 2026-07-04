@@ -63,7 +63,7 @@ async def test_answer_question(client: AsyncClient) -> None:
         },
     ])
 
-    resp = await client.post("/api/v1/questions/answer", json={
+    resp = await client.post("/api/v1/answer", json={
         "channel": "web",
         "question": "Какие требования к правилам внутреннего контроля?",
         "subject_type": "article_7_1",
@@ -80,7 +80,7 @@ async def test_answer_question(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_answer_no_fragments(client: AsyncClient) -> None:
     """Should refuse when no indexed fragments match."""
-    resp = await client.post("/api/v1/questions/answer", json={
+    resp = await client.post("/api/v1/answer", json={
         "channel": "web",
         "question": "Очень специфичный вопрос ни о чём конкретном что не найдётся в фрагментах",
     })
@@ -92,5 +92,5 @@ async def test_answer_no_fragments(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_get_session(client: AsyncClient) -> None:
-    resp = await client.get("/api/v1/questions/nonexistent")
+    resp = await client.get("/api/v1/answer/nonexistent")
     assert resp.status_code == 404

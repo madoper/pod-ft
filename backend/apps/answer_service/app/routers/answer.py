@@ -14,7 +14,7 @@ router = APIRouter(tags=["questions"])
 _service = AnsweringService()
 
 
-@router.post("/questions/answer", response_model=AnswerQuestionResponse)
+@router.post("/answer", response_model=AnswerQuestionResponse)
 async def answer_question(payload: AnswerQuestionRequest) -> AnswerQuestionResponse:
     result = await _service.answer(
         question=payload.question,
@@ -34,7 +34,7 @@ async def answer_question(payload: AnswerQuestionRequest) -> AnswerQuestionRespo
     )
 
 
-@router.get("/questions/{session_id}", response_model=AnswerQuestionResponse)
+@router.get("/answer/{session_id}", response_model=AnswerQuestionResponse)
 async def get_answer_status(session_id: str) -> AnswerQuestionResponse:
     result = await _service.get_session(session_id)
     if not result:

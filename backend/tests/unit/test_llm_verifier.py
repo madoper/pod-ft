@@ -3,18 +3,24 @@ __anchor__ = "tests"
 import pytest
 
 from backend.apps.verification.app.services.llm_verifier import LlmVerifier
+from backend.shared.settings import settings
 
 
 @pytest.mark.asyncio
 async def test_llm_verifier_not_configured() -> None:
-    verifier = LlmVerifier()
-    result = await verifier.verify(
-        question="Test?",
-        fragments=[{"fragment_text": "Answer.", "citation_label": "ст. 1", "tier": 1}],
-        draft_summary="Test summary",
-    )
-    assert result["passed"] is True
-    assert result["reason"] == "llm_not_configured"
+    old_key = settings.llm_api_key
+    settings.llm_api_key = ""
+    try:
+        verifier = LlmVerifier()
+        result = await verifier.verify(
+            question="Test?",
+            fragments=[{"fragment_text": "Answer.", "citation_label": "ст. 1", "tier": 1}],
+            draft_summary="Test summary",
+        )
+        assert result["passed"] is True
+        assert result["reason"] == "llm_not_configured"
+    finally:
+        settings.llm_api_key = old_key
 
 
 @pytest.mark.asyncio

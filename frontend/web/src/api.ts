@@ -76,6 +76,39 @@ export async function pollCheckResult(jobId: string): Promise<CheckResult> {
   return res.json();
 }
 
+export interface FindingData {
+  finding_type: string;
+  summary: string;
+  obligation_id?: string;
+  citation_label?: string;
+  fragment_text?: string;
+  confidence: number;
+}
+
+export interface ExportLinkData {
+  format: string;
+  url: string;
+  label: string;
+}
+
+export interface CheckResultData {
+  job_id: string;
+  status: string;
+  total_fragments_found: number;
+  findings: FindingData[];
+  coverage_summary: string;
+  created_at: string;
+  export_links: ExportLinkData[];
+}
+
+export async function getCheckResult(jobId: string): Promise<CheckResultData | null> {
+  const res = await fetch(`${API_BASE}/check/${jobId}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data.status !== "completed" || !data.result) return null;
+  return data.result as CheckResultData;
+}
+
 export async function fetchSources(): Promise<any[]> {
   const res = await fetch(`${API_BASE}/sources`);
   if (!res.ok) return [];

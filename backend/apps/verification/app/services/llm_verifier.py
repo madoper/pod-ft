@@ -17,9 +17,8 @@ class LlmVerifier:
 
     def __init__(self, router: LlmProviderRouter | None = None) -> None:
         self._router = router
-        self._available = self._check_available()
 
-    def _check_available(self) -> bool:
+    def _is_available(self) -> bool:
         return bool(settings.llm_api_key) or self._router is not None
 
     async def verify(
@@ -29,7 +28,7 @@ class LlmVerifier:
         draft_summary: str | None,
     ) -> dict[str, Any]:
         """Run LLM verification. Returns dict with passed/confidence/reason."""
-        if not self._available:
+        if not self._is_available():
             return {"passed": True, "confidence": 1.0, "reason": "llm_not_configured"}
 
         prompt = self._build_prompt(question, fragments, draft_summary)
