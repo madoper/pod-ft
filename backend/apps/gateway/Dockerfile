@@ -10,6 +10,7 @@ COPY backend/shared backend/shared
 COPY backend/apps/gateway backend/apps/gateway
 COPY backend/apps/auth_billing backend/apps/auth_billing
 COPY backend/apps/source_registry backend/apps/source_registry
+COPY backend/apps/tenant_profile backend/apps/tenant_profile
 COPY backend/apps/crawler backend/apps/crawler
 COPY backend/apps/parser backend/apps/parser
 COPY backend/apps/versioning backend/apps/versioning
