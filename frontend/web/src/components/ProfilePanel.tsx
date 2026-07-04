@@ -44,17 +44,17 @@ export default function ProfilePanel() {
       {subscription && (
         <div className="info-section">
           <h3>Подписка</h3>
-          <p>План: <strong>{subscription.plan}</strong></p>
-          <p>Запросов: {subscription.queries_used} / {subscription.queries_limit}</p>
+          <p>Тариф: <strong>{subscription.tier === "free" ? "Бесплатный" : subscription.tier}</strong></p>
+          <p>Запросов: {subscription.usage_this_month} / {subscription.monthly_quota}</p>
           <div className="progress-bar">
             <div
               className="progress-fill"
               style={{
-                width: `${Math.min(100, (subscription.queries_used / subscription.queries_limit) * 100)}%`,
+                width: `${Math.min(100, (subscription.usage_this_month / subscription.monthly_quota) * 100)}%`,
               }}
             />
           </div>
-          <small>Действует до: {new Date(subscription.expires_at).toLocaleDateString("ru-RU")}</small>
+          <p>Осталось: {subscription.quota_remaining}</p>
         </div>
       )}
       {quota && (

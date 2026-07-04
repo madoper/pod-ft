@@ -43,11 +43,11 @@ export default function ChangesPanel() {
       {changes.length > 0 && (
         <ul>
           {changes.map((c) => (
-            <li key={c.change_id} className="change-item">
-              <strong>{c.document_title}</strong>
+            <li key={c.document_id} className="change-item">
+              <strong>{c.title}</strong>
               <span className={`change-type change-${c.change_type}`}>{c.change_type}</span>
-              <p>{c.summary}</p>
-              {c.version_from && <small>Версия: {c.version_from} → {c.version_to || "текущая"}</small>}
+              {c.summary && <p>{c.summary}</p>}
+              {c.version_label && <small>Версия: {c.version_label}{c.effective_from ? ` (с ${c.effective_from})` : ""}</small>}
             </li>
           ))}
         </ul>

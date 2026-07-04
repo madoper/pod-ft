@@ -31,6 +31,7 @@ _pg_available = True
 # In-memory billing stores
 _subscriptions: dict[str, dict[str, Any]] = {
     "1": {"tenant_id": "1", "tier": "free", "monthly_quota": 100},
+    "demo": {"tenant_id": "demo", "tier": "free", "monthly_quota": 100},
 }
 _usage: dict[str, list[dict[str, Any]]] = {}
 

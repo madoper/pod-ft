@@ -22,8 +22,7 @@ export default function SourcePanel() {
       <ul>
         {sources.map((s, i) => (
           <li key={i}>
-            <strong>{s.title || s.name || "?"}</strong>
-            {s.version && <span> v{s.version}</span>}
+            <strong>{s.domain || s.regulator_name || "?"}</strong>
           </li>
         ))}
       </ul>

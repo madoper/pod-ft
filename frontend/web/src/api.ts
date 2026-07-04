@@ -10,6 +10,10 @@ export interface CitationLabel {
 export interface AnswerResponse {
   answer: string;
   evidence: CitationLabel[];
+  answer_session_id?: string;
+  status?: string;
+  evidence_count?: number;
+  verifier_status?: string;
 }
 
 export interface CheckResponse {
@@ -47,7 +51,23 @@ export async function askQuestion(
     const err = await res.text().catch(() => "Unknown error");
     throw new Error(`HTTP ${res.status}: ${err}`);
   }
-  return res.json();
+  const data = await res.json();
+  const summary = data.answer?.summary || "";
+  const citations = data.answer?.citations || [];
+  const evidence: CitationLabel[] = citations.map((c: any) => ({
+    label: c.citation_label || "",
+    text: c.quote || "",
+    source: c.document_title || c.source_url || "",
+    version: c.version_effective_from || undefined,
+  }));
+  return {
+    answer: summary,
+    evidence,
+    answer_session_id: data.answer_session_id,
+    status: data.status,
+    evidence_count: data.evidence_count,
+    verifier_status: data.verifier_status,
+  };
 }
 
 export async function submitCheck(
@@ -110,10 +130,10 @@ export async function getCheckResult(jobId: string): Promise<CheckResultData | n
 }
 
 export async function fetchSources(): Promise<any[]> {
-  const res = await fetch(`${API_BASE}/sources`);
+  const res = await fetch(`${API_BASE}/sources/active`);
   if (!res.ok) return [];
   const data = await res.json();
-  return data.sources || [];
+  return Array.isArray(data) ? data : data.sources || [];
 }
 
 export interface BlockedItem {
@@ -131,11 +151,11 @@ export async function fetchAdminBlocks(): Promise<BlockedItem[]> {
 }
 
 export interface SubscriptionInfo {
-  subscription_id: string;
-  plan: string;
-  queries_used: number;
-  queries_limit: number;
-  expires_at: string;
+  tenant_id: string;
+  tier: string;
+  monthly_quota: number;
+  usage_this_month: number;
+  quota_remaining: number;
 }
 
 export async function fetchSubscription(userId: string): Promise<SubscriptionInfo | null> {
@@ -160,27 +180,26 @@ export interface SourceItem {
 }
 
 export async function fetchSourcesDetail(): Promise<SourceItem[]> {
-  const res = await fetch(`${API_BASE}/sources`);
+  const res = await fetch(`${API_BASE}/sources/active`);
   if (!res.ok) return [];
   const data = await res.json();
-  return data.sources || [];
+  return Array.isArray(data) ? data : data.sources || [];
 }
 
 export interface ChangeItem {
-  change_id: string;
   document_id: string;
-  document_title: string;
+  title: string;
+  version_label: string;
   change_type: string;
-  summary: string;
-  version_from?: string;
-  version_to?: string;
+  effective_from?: string;
+  summary?: string;
 }
 
 export async function fetchChanges(fromDate?: string): Promise<ChangeItem[]> {
   const params = fromDate ? `?from_date=${fromDate}` : "";
   const res = await fetch(`${API_BASE}/changes${params}`);
   if (!res.ok) return [];
-  return res.json().then((d) => d.items || []);
+  return res.json().then((d) => d.changes || d.items || []);
 }
 
 export interface SubjectProfileDto {
@@ -218,15 +237,17 @@ export async function deleteProfile(profileId: string): Promise<boolean> {
 }
 
 export interface TemplateInfo {
-  id: string;
+  draft_id: string;
+  document_type: string;
   title: string;
-  description: string;
+  summary: string;
 }
 
 export async function fetchTemplates(): Promise<TemplateInfo[]> {
   const res = await fetch(`${API_BASE}/drafts`);
   if (!res.ok) return [];
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 }
 
 export async function fetchUsageStats(): Promise<any> {

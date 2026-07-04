@@ -16,8 +16,8 @@ export default function DashboardPanel() {
         ]);
         setSourceCount(sources.length);
         if (sub) {
-          setQuotaUsed(sub.queries_used);
-          setQuotaLimit(sub.queries_limit);
+          setQuotaUsed(sub.usage_this_month);
+          setQuotaLimit(sub.monthly_quota);
         }
       } catch { /* ignore */ } finally {
         setLoading(false);

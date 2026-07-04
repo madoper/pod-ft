@@ -21,9 +21,9 @@ export default function TemplatesPanel() {
         <p className="placeholder">Нет доступных шаблонов. Используйте раздел «Профиль» для настройки применимости.</p>
       )}
       {templates.map((t) => (
-        <div key={t.id} className="template-card">
+        <div key={t.draft_id} className="template-card">
           <h3>{t.title}</h3>
-          <p>{t.description}</p>
+          <p>{t.summary || t.document_type}</p>
           <button disabled>Сгенерировать</button>
         </div>
       ))}
