@@ -108,6 +108,7 @@ services:
       - podft-net
 
   gateway:
+    image: ghcr.io/madoper/pod-ft/gateway:latest
     build:
       context: .
       dockerfile: backend/apps/gateway/Dockerfile
@@ -346,6 +347,7 @@ services:
       - podft-net
 
   telegram-bot:
+    image: ghcr.io/madoper/pod-ft/telegram-bot:latest
     build:
       context: .
       dockerfile: frontend/telegram/Dockerfile
@@ -362,6 +364,7 @@ services:
     restart: unless-stopped
 
   web-frontend:
+    image: ghcr.io/madoper/pod-ft/web-frontend:latest
     build:
       context: frontend/web
       dockerfile: Dockerfile
