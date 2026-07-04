@@ -113,6 +113,13 @@ jobs:
             git pull origin main
             if ! grep -q "BOT_TOKEN" .env 2>/dev/null; then echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" >> .env; fi
             docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml pull gateway web-frontend telegram-bot postgres qdrant redis minio
-            docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml up -d --force-recreate
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml up -d --build --force-recreate
+            sleep 10
+            if ! curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
+              echo "=== Gateway logs ==="
+              docker logs podft-gateway --tail 40 2>&1
+              echo "=== Gateway status ==="
+              docker inspect podft-gateway --format '{{.State.Status}} {{.State.ExitCode}} {{.State.Error}}' 2>&1
+            fi
             docker image prune -f
             echo "Deploy complete: $(date)"
