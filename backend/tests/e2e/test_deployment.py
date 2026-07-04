@@ -68,7 +68,7 @@ def test_web_frontend_served() -> None:
     with httpx.Client(base_url=BASE_URL, timeout=10, follow_redirects=True) as c:
         resp = c.get("/")
     assert resp.status_code == 200
-    assert "pod-ft" in resp.text
+    assert "ПОД/ФТ" in resp.text
 
 
 def test_web_frontend_serves_assets() -> None:
