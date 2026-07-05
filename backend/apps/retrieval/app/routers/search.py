@@ -1,6 +1,8 @@
 __anchor__ = "retrieval"
 # schema-ref: project-schema.yaml#/services/8
 
+from typing import Any
+
 from fastapi import APIRouter
 
 from backend.apps.retrieval.app.schemas.search import (
