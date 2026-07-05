@@ -79,11 +79,11 @@ async def _process_source(source: dict[str, Any]) -> dict[str, Any]:
 async def _process_crawl_result(
     crawl_result: dict[str, Any], source_domain: str
 ) -> None:
-    from backend.apps.parser.app.services.parser_service import ParserService
-
     from backend.apps.obligation_extractor.app.services.extractor_service import (
         ObligationExtractorService,
     )
+    from backend.apps.parser.app.services.parse_service import ParseService
+    from backend.apps.retrieval.app.services.retrieval_service import RetrievalService
     from backend.apps.vector_indexer.app.services.indexer_service import IndexerService
     from backend.apps.versioning.app.services.versioning_service import (
         VersioningService,
@@ -91,22 +91,23 @@ async def _process_crawl_result(
 
     url = crawl_result.get("url", "")
     content = crawl_result.get("content", "")
-    content_type = crawl_result.get("content_type", "text/html")
+    title = crawl_result.get("title", "")
 
     # Parse
-    parser = ParserService()
-    parsed = await parser.parse(url=url, content=content, content_type=content_type)
-    if not parsed:
+    parser = ParseService()
+    parsed = await parser.parse_html(url=url, html_content=content, document_title=title)
+    if not parsed or not parsed.get("fragments"):
         logger.warning("ingestion: parse returned empty for %s", url)
         return
 
     # Register version
     versioner = VersioningService()
+    content_hash = crawl_result.get("checksum", "")
     version_result = await versioner.register_document(
         canonical_url=url,
-        document_title=parsed.get("title", ""),
-        document_kind=parsed.get("document_kind", "unknown"),
-        content_hash=parsed.get("content_hash", ""),
+        document_title=parsed.get("document_title", title),
+        document_kind="unknown",
+        content_hash=content_hash,
         regulator_code=_get_regulator_code(source_domain),
     )
 
@@ -119,12 +120,21 @@ async def _process_crawl_result(
         fragments=fragments,
     )
 
-    # Index vectors
-    indexer = IndexerService()
+    # Index into BM25 (always works, in-memory)
+    retrieval = RetrievalService()
     enriched_fragments = _enrich_fragments(
         fragments, version_result, source_domain
     )
-    await indexer.index_fragments(enriched_fragments)
+    bm25_count = await retrieval.index_fragments(enriched_fragments)
+    logger.info("ingestion: indexed %d fragments in BM25 for %s", bm25_count, url)
+
+    # Index vectors into Qdrant (optional, gracefully degrades if not available)
+    indexer = IndexerService()
+    qdrant_count = await indexer.index_fragments(enriched_fragments)
+    if qdrant_count > 0:
+        logger.info("ingestion: indexed %d vectors in Qdrant for %s", qdrant_count, url)
+    else:
+        logger.info("ingestion: Qdrant not available, skipped vector indexing for %s", url)
 
     logger.info(
         "ingestion: processed %s — norms=%d, obligations=%d, fragments=%d",
