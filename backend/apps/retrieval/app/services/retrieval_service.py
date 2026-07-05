@@ -1,6 +1,7 @@
-__anchor__ = "retrieval"
+﻿__anchor__ = "retrieval"
 # schema-ref: project-schema.yaml#/services/8
 
+import contextlib
 import math
 import re
 from collections import Counter
@@ -21,7 +22,7 @@ class RetrievalService:
     BM25 runs on in-memory index for speed. Qdrant vector search runs
     as a parallel strategy; results are merged via reciprocal rank fusion.
 
-    Uses Borg pattern — all instances share the same BM25 index.
+    Uses Borg pattern вЂ” all instances share the same BM25 index.
     """
 
     _shared = _SharedState()
@@ -31,6 +32,40 @@ class RetrievalService:
         cls._shared._fragments.clear()
         cls._shared._inverted_index.clear()
         cls._shared._total_docs = 0
+
+    async def load_from_qdrant(self) -> int:
+        try:
+            from backend.shared.db.qdrant import QdrantClient
+            qdrant = QdrantClient()
+            await qdrant.connect()
+        except Exception:
+            return 0
+        try:
+            all_points = []
+            offset = 0
+            batch = await qdrant.scroll_points(limit=100, offset=offset)
+            while batch:
+                all_points.extend(batch)
+                offset += len(batch)
+                batch = await qdrant.scroll_points(limit=100, offset=offset)
+        except Exception:
+            await qdrant.disconnect()
+            return 0
+        fragments = []
+        for p in all_points:
+            payload = p["payload"]
+            fragments.append({
+                "fragment_id": p["fragment_id"],
+                "document_title": payload.get("document_title"),
+                "fragment_text": payload.get("fragment_text", ""),
+                "citation_label": payload.get("citation_label", ""),
+                "tier": payload.get("tier", 1),
+                "source_domain": payload.get("source_domain"),
+            })
+        count = await self.index_fragments(fragments)
+        with contextlib.suppress(Exception):
+            await qdrant.disconnect()
+        return count
 
     def __init__(self, qdrant_client: Any | None = None) -> None:
         self._qdrant = qdrant_client
@@ -162,8 +197,8 @@ class RetrievalService:
             "for", "of", "by", "with", "is", "are", "was", "were", "be",
             "been", "being", "have", "has", "had", "do", "does", "did",
             "will", "would", "can", "could", "may", "might", "shall",
-            "should", "это", "не", "как", "что", "для", "в", "на", "с",
-            "по", "от", "из", "к", "у", "за", "о", "об", "при",
+            "should", "СЌС‚Рѕ", "РЅРµ", "РєР°Рє", "С‡С‚Рѕ", "РґР»СЏ", "РІ", "РЅР°", "СЃ",
+            "РїРѕ", "РѕС‚", "РёР·", "Рє", "Сѓ", "Р·Р°", "Рѕ", "РѕР±", "РїСЂРё",
         }
         return [t for t in tokens if t not in stop_words and len(t) > 2]
 
@@ -203,7 +238,7 @@ class RetrievalService:
                 "fragment_id": "mock-1",
                 "document_title": "Mock Document",
                 "fragment_text": f"Sample fragment matching query: {query}",
-                "citation_label": "фр. 1",
+                "citation_label": "С„СЂ. 1",
                 "score": 0.85,
                 "tier": 1,
                 "confidence": 0.85,
@@ -213,7 +248,7 @@ class RetrievalService:
                 "fragment_id": "mock-2",
                 "document_title": "Mock Document",
                 "fragment_text": f"Another relevant fragment about: {query}",
-                "citation_label": "фр. 2",
+                "citation_label": "С„СЂ. 2",
                 "score": 0.72,
                 "tier": 1,
                 "confidence": 0.72,
@@ -250,3 +285,5 @@ class RetrievalService:
                 })
         results.sort(key=lambda x: x["score"], reverse=True)
         return results[:top_k]
+
+

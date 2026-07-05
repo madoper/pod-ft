@@ -1,4 +1,4 @@
-__anchor__ = "db-clients"
+﻿__anchor__ = "db-clients"
 # schema-ref: project-schema.yaml#/shared_modules/2
 
 from collections.abc import AsyncIterator
@@ -103,6 +103,26 @@ class QdrantClient:
             collection_name=collection,
             points_selector=point_ids,  # type: ignore[arg-type]
         )
+
+    async def scroll_points(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        collection: str = DEFAULT_COLLECTION,
+    ) -> list[dict[str, Any]]:
+        client = self._inner
+        records, _ = await client.scroll(
+            collection_name=collection,
+            limit=limit,
+            offset=offset,
+        )
+        return [
+            {
+                "fragment_id": p.id,
+                "payload": p.payload or {},
+            }
+            for p in records
+        ]
 
     async def delete_collection(self, collection: str = DEFAULT_COLLECTION) -> None:
         client = self._inner

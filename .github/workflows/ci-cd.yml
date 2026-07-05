@@ -1,4 +1,4 @@
-name: CI/CD
+﻿name: CI/CD
 
 permissions:
   contents: read
@@ -122,4 +122,6 @@ jobs:
               docker inspect podft-gateway --format '{{.State.Status}} {{.State.ExitCode}} {{.State.Error}}' 2>&1
             fi
             docker image prune -f
+            bash infra/scripts/setup-cron.sh
             echo "Deploy complete: $(date)"
+

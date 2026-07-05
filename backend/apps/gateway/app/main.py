@@ -1,4 +1,4 @@
-__anchor__ = "gateway"
+﻿__anchor__ = "gateway"
 # schema-ref: project-schema.yaml#/services/0
 
 from collections.abc import AsyncIterator
@@ -41,6 +41,18 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
     logger.info("gateway starting", anchor="gateway")
     await redis_client.connect()
+    # Seed regulatory fragments
+    try:
+        from backend.apps.retrieval.app.services.retrieval_service import RetrievalService
+        from backend.shared.data.seed_fragments import ALL_SEED_FRAGMENTS
+        retrieval = RetrievalService()
+        seed_count = await retrieval.index_fragments(ALL_SEED_FRAGMENTS)
+        logger.info("gateway: seeded %d regulatory fragments", seed_count)
+        qdrant_count = await retrieval.load_from_qdrant()
+        if qdrant_count > 0:
+            logger.info("gateway: restored %d fragments from Qdrant", qdrant_count)
+    except Exception as exc:
+        logger.warning("gateway: seed/restore failed: %s", exc)
     yield
     await redis_client.disconnect()
     logger.info("gateway stopped", anchor="gateway")

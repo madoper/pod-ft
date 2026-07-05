@@ -7,6 +7,7 @@ dist/
 build/
 *.db
 data/
+!backend/shared/data/
 *.pem
 *.key
 node_modules/
