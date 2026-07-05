@@ -1,0 +1,103 @@
+﻿:root {
+  /* Colors */
+  --color-primary: #24316E;
+  --color-on-primary: #FFFFFF;
+  --color-surface: #F7F8FA;
+  --color-surface-alt: #FFFFFF;
+  --color-text: #16181D;
+  --color-text-secondary: #7C7F8A;
+  --color-border: #DCDEE4;
+  --color-success: #1E8E5A;
+  --color-warning: #B98900;
+  --color-danger: #C43D3D;
+  --color-info: #3F51B5;
+
+  /* Sidebar */
+  --sidebar-bg: #FFFFFF;
+  --sidebar-active: #E8EAF6;
+  --sidebar-active-text: #24316E;
+  --sidebar-icon: #9DA0AC;
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
+
+  /* TopBar */
+  --topbar-bg: #FFFFFF;
+  --topbar-border: #DCDEE4;
+  --topbar-height: 56px;
+
+  /* Card */
+  --card-bg: #FFFFFF;
+  --card-border: #DCDEE4;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+
+  /* Input */
+  --input-bg: #FFFFFF;
+  --input-border: #DCDEE4;
+  --input-focus: #24316E;
+
+  /* Typography */
+  --font-body: "Inter", "PT Sans", -apple-system, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --line-height-body: 1.5;
+  --line-height-heading: 1.3;
+
+  /* Spacing */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-body);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Responsive: sidebar hidden on small screens */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none !important;
+  }
+  .mobile-tab-bar {
+    display: flex !important;
+  }
+  .app-main {
+    padding-bottom: 72px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-tab-bar {
+    display: none !important;
+  }
+}

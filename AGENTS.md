@@ -1,4 +1,4 @@
-# pod-ft
+﻿# pod-ft
 
 LLM RAG platform for Russian AML/CFT (ПОД/ФТ/ФРОМУ) regulatory compliance.
 
@@ -169,3 +169,37 @@ make infra-vps               # docker compose up without neo4j (1 GB VPS)
 - HTTPS via Let's Encrypt in CI/CD deploy step
 - GitHub: `https://github.com/madoper/podft`
 - `.env` needs `LLM_PROVIDER=openrouter`, `LLM_API_KEY=sk-or-v1-...`, `LLM_MODEL=poolside/laguna-xs-2.1:free`
+
+## UI/UX Redesign (Sprint 9) — Phase 0-5 Complete
+
+| Phase | Component | Status |
+|---|---|---|
+| 0 (Infrastructure) | Tailwind CSS + lucide-react installed, vite config, token JSON files (primitives/semantic/components), tailwind.css entry, variables.css, dark.css | ✅ |
+| 1 (Theming) | useTheme hook (useSyncExternalStore), ThemeProvider context, flash prevention in index.html, dark/light CSS variables | ✅ |
+| 2 (Navigation) | AppShell (sidebar+topbar+main grid), Sidebar (collapsible 240→64px, 5 main items + 2 footer), TopBar (theme toggle, notifications), MobileTabBar (<768px), responsive media queries | ✅ |
+| 3 (Backend) | ackend/apps/chat/ app (sessions CRUD, message history, feedback), SSE streaming endpoint GET /answer/{session_id}/stream, chat router wired in gateway | ✅ |
+| 4 (Chat Screen) | ChatPanel (with useReducer), ChatHistory (Q&A list with citations), ChatInput (auto-grow textarea + quick template chips), CitationCard, FeedbackBar, SkeletonAnswer | ✅ |
+| 5 (Accessibility) | ria-live="polite" on chat log, ole="status" on skeleton, ria-current="page" on nav, focus-visible rings, responsive 768px breakpoint | ✅ |
+
+### Key files added/modified
+
+- rontend/web/src/styles/tailwind.css, ariables.css, dark.css — NEW
+- rontend/web/src/tokens/primitives.json, semantic.json, components.json — NEW
+- rontend/web/src/hooks/useTheme.ts, useChat.ts, useChatAPI.ts — NEW
+- rontend/web/src/components/ThemeProvider.tsx — NEW
+- rontend/web/src/components/layout/AppShell.tsx, Sidebar.tsx, TopBar.tsx, MobileTabBar.tsx — NEW
+- rontend/web/src/components/chat/ChatPanel.tsx, ChatHistory.tsx, ChatInput.tsx, CitationCard.tsx, FeedbackBar.tsx, SkeletonAnswer.tsx — NEW
+- ackend/apps/chat/ — NEW (schemas, service, router)
+- ackend/apps/answer_service/app/routers/answer.py — UPDATED (SSE streaming)
+- ackend/apps/gateway/app/main.py — UPDATED (chat router wired)
+- rontend/web/src/App.tsx — UPDATED (ThemeProvider, AppShell, ChatPanel)
+- rontend/web/src/main.tsx — UPDATED (tailwind.css import)
+- rontend/web/index.html — UPDATED (flash prevention)
+- rontend/web/vite.config.ts — UPDATED (Tailwind plugin)
+
+### Verification
+
+- ruff: ✅ 0 errors
+- mypy: ✅ 0 errors in 297 files
+- pytest: ✅ 111/111 passed
+- npm run build: ✅ clean build

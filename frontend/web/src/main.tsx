@@ -1,7 +1,9 @@
-import { StrictMode } from "react";
+﻿import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
-import "./style.css";
+import "./styles/tailwind.css";
+import "./styles/variables.css";
+import "./styles/dark.css";
 
 const root = document.getElementById("root");
 if (root) {

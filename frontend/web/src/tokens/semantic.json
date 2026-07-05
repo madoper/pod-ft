@@ -1,0 +1,21 @@
+﻿{
+  "color": {
+    "primary": "{blue.600}",
+    "onPrimary": "#FFFFFF",
+    "surface": "{gray.50}",
+    "surfaceAlt": "#FFFFFF",
+    "text": "{gray.900}",
+    "textSecondary": "{gray.500}",
+    "border": "{gray.200}",
+    "success": "{green.600}",
+    "warning": "{orange.600}",
+    "danger": "{red.600}",
+    "info": "{blue.500}"
+  },
+  "font": {
+    "body": "{font.family}",
+    "heading": "{font.family}",
+    "size": "{font.size.base}",
+    "lineHeight": "{font.lineHeight.body}"
+  }
+}

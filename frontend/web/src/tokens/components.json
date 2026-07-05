@@ -1,0 +1,29 @@
+﻿{
+  "sidebar": {
+    "bg": "{surface}",
+    "active": "{blue.50}",
+    "activeText": "{blue.600}",
+    "icon": "{gray.400}",
+    "width": "240px",
+    "collapsedWidth": "64px"
+  },
+  "topbar": {
+    "bg": "#FFFFFF",
+    "border": "{border}",
+    "height": "56px"
+  },
+  "card": {
+    "bg": "#FFFFFF",
+    "border": "{border}",
+    "shadow": "0 1px 3px rgba(0,0,0,0.08)"
+  },
+  "badge": {
+    "success": "{green.600}",
+    "warning": "{orange.600}"
+  },
+  "input": {
+    "border": "{border}",
+    "focus": "{blue.600}",
+    "bg": "#FFFFFF"
+  }
+}

@@ -12,6 +12,7 @@ from backend.apps.admin.app.routers.admin import router as admin_router
 from backend.apps.answer_service.app.routers.answer import router as answer_router
 from backend.apps.auth_billing.app.routers.auth import router as auth_router
 from backend.apps.changes.app.routers.changes import router as changes_router
+from backend.apps.chat.app.routers.chat import router as chat_router
 from backend.apps.crawler.app.routers.crawl import router as crawl_router
 from backend.apps.doc_check.app.routers.check import router as check_router
 from backend.apps.document_upload.app.routers.upload import router as upload_router
@@ -93,6 +94,7 @@ app.include_router(export_router, prefix="/api/v1")
 app.include_router(upload_router, prefix="/api/v1")
 app.include_router(changes_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(chat_router, prefix="/api/v1")
 app.include_router(tenant_profile_router, prefix="/api/v1")
 
 
@@ -113,3 +115,5 @@ app.add_middleware(IdempotencyKeyMiddleware)
 app.add_middleware(RateLimitMiddleware, max_requests=100, window_sec=60)  # type: ignore[arg-type]
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(MetricsMiddleware)
+
+

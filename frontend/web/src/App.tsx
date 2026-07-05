@@ -1,32 +1,22 @@
-import { useState, useEffect } from "react";
-import type { CitationLabel } from "./api";
-import QuestionPanel from "./components/QuestionPanel";
-import AnswerPanel from "./components/AnswerPanel";
+﻿import { useState, useEffect } from "react";
+import { ThemeProvider } from "./components/ThemeProvider";
+import AppShell from "./components/layout/AppShell";
+import ChatPanel from "./components/chat/ChatPanel";
 import DashboardPanel from "./components/DashboardPanel";
 import DocCheckPanel from "./components/DocCheckPanel";
 import SourcePanel from "./components/SourcePanel";
-import DocumentsPanel from "./components/DocumentsPanel";
-import ChangesPanel from "./components/ChangesPanel";
-import SubjectProfilePanel from "./components/SubjectProfilePanel";
-import TemplatesPanel from "./components/TemplatesPanel";
+import AboutPanel from "./components/AboutPanel";
 import AdminPanel from "./components/AdminPanel";
 import ProfilePanel from "./components/ProfilePanel";
-import AboutPanel from "./components/AboutPanel";
 import OnboardingGuide from "./components/OnboardingGuide";
 
-type Tab = "about" | "ask" | "check" | "sources" | "documents" | "changes" | "profile" | "subject-profile" | "templates" | "admin" | "dashboard";
+type Tab = "dashboard" | "ask" | "check" | "sources" | "profile" | "about" | "admin";
 
 const STORAGE_KEY = "podft_onboarding_seen";
-const GUIDE_KEY = "podft_guide_completed";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("dashboard");
-  const [answer, setAnswer] = useState("");
-  const [evidence, setEvidence] = useState<CitationLabel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [showWelcome, setShowWelcome] = useState(false);
-  const [demoQuestion, setDemoQuestion] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
@@ -39,131 +29,67 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, "true");
   }
 
-  function handleWelcomeAbout() {
-    handleDismissWelcome();
-    setTab("about");
-  }
-
-  function handleWelcomeStart() {
-    handleDismissWelcome();
-    const guideSeen = localStorage.getItem(GUIDE_KEY);
-    if (!guideSeen) {
-      setTab("ask");
-      setShowGuide(true);
-    } else {
-      setTab("ask");
-    }
-  }
-
-  function handleGuideComplete() {
-    setShowGuide(false);
-    localStorage.setItem(GUIDE_KEY, "true");
-  }
-
-  function handleTryDemo(question: string) {
-    setDemoQuestion(question);
-    setTab("ask");
-  }
-
-  function handleNavigate(target: string) {
+  function handleTabChange(target: string) {
     setTab(target as Tab);
   }
 
   return (
-    <div className="app">
-      <header>
-        <h1>ИИ помощник по ПОД/ФТ/ФРОМУ</h1>
-        <nav>
-          <button className={tab === "about" ? "active" : ""} onClick={() => setTab("about")}>
-            О проекте
-          </button>
-          <button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>
-            Дашборд
-          </button>
-          <button className={tab === "ask" ? "active" : ""} onClick={() => setTab("ask")}>
-            Запрос
-          </button>
-          <button className={tab === "check" ? "active" : ""} onClick={() => setTab("check")}>
-            Проверка
-          </button>
-          <button className={tab === "sources" ? "active" : ""} onClick={() => setTab("sources")}>
-            Источники
-          </button>
-          <button className={tab === "documents" ? "active" : ""} onClick={() => setTab("documents")}>
-            Каталог
-          </button>
-          <button className={tab === "changes" ? "active" : ""} onClick={() => setTab("changes")}>
-            Изменения
-          </button>
-          <button className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}>
-            Биллинг
-          </button>
-          <button className={tab === "subject-profile" ? "active" : ""} onClick={() => setTab("subject-profile")}>
-            Профиль
-          </button>
-          <button className={tab === "templates" ? "active" : ""} onClick={() => setTab("templates")}>
-            Шаблоны
-          </button>
-          <button className={tab === "admin" ? "active" : ""} onClick={() => setTab("admin")}>
-            Админ
-          </button>
-        </nav>
-      </header>
-
-      <main>
-        {tab === "about" && (
-          <AboutPanel onTryDemo={handleTryDemo} onNavigate={handleNavigate} />
-        )}
+    <ThemeProvider>
+      <AppShell activeTab={tab} onTabChange={handleTabChange}>
+        {tab === "ask" && <ChatPanel />}
         {tab === "dashboard" && <DashboardPanel />}
-        {tab === "ask" && (
-          <div className="two-panel">
-            <QuestionPanel
-              key={demoQuestion || "default"}
-              initialQuestion={demoQuestion || undefined}
-              onAnswer={(a, e) => { setAnswer(a); setEvidence(e); setError(""); }}
-              onError={(e) => { setError(e); setAnswer(""); setEvidence([]); }}
-              loading={loading}
-              setLoading={setLoading}
-            />
-            <AnswerPanel answer={answer} evidence={evidence} loading={loading} error={error} />
-          </div>
-        )}
         {tab === "check" && <DocCheckPanel />}
         {tab === "sources" && <SourcePanel />}
-        {tab === "documents" && <DocumentsPanel />}
-        {tab === "changes" && <ChangesPanel />}
         {tab === "profile" && <ProfilePanel />}
-        {tab === "subject-profile" && <SubjectProfilePanel />}
-        {tab === "templates" && <TemplatesPanel />}
+        {tab === "about" && <AboutPanel onTryDemo={(_q) => { setTab("ask"); }} onNavigate={handleTabChange} />}
         {tab === "admin" && <AdminPanel />}
-      </main>
+      </AppShell>
 
-      {showGuide && (
-        <OnboardingGuide
-          onComplete={handleGuideComplete}
-          onNavigate={handleNavigate}
-        />
-      )}
+      {showGuide && <OnboardingGuide onComplete={() => { setShowGuide(false); localStorage.setItem("podft_guide_completed", "true"); }} onNavigate={handleTabChange} />}
 
       {showWelcome && (
-        <div className="modal-overlay" onClick={handleDismissWelcome}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Добро пожаловать!</h2>
-            <p>
-              ИИ помощник по ПОД/ФТ/ФРОМУ — система комплаенс-проверки на
-              основе extractive RAG по официальным регуляторным источникам Tier-1.
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+          }}
+          onClick={handleDismissWelcome}
+        >
+          <div
+            style={{
+              background: "var(--card-bg)", borderRadius: "var(--radius-lg)", padding: "var(--spacing-8)", maxWidth: "440px", width: "90%", boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ margin: "0 0 var(--spacing-3)" }}>Добро пожаловать!</h2>
+            <p style={{ color: "var(--color-text-secondary)", lineHeight: "var(--line-height-body)", margin: 0 }}>
+              ИИ помощник по ПОД/ФТ/ФРОМУ — система комплаенс-проверки на основе extractive RAG по официальным регуляторным источникам Tier-1.
             </p>
-            <div className="modal-actions">
-              <button onClick={handleWelcomeAbout} className="btn-modal-secondary">
+            <div style={{ display: "flex", gap: "var(--spacing-3)", marginTop: "var(--spacing-6)", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => { handleDismissWelcome(); setTab("about"); }}
+                style={{
+                  padding: "var(--spacing-2) var(--spacing-4)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", background: "var(--card-bg)", cursor: "pointer", color: "var(--color-text)", fontSize: "var(--font-size-sm)",
+                }}
+              >
                 О проекте
               </button>
-              <button onClick={handleWelcomeStart} className="btn-modal-primary">
+              <button
+                onClick={() => {
+                  handleDismissWelcome();
+                  setTab("ask");
+                  const guideSeen = localStorage.getItem("podft_guide_completed");
+                  if (!guideSeen) setShowGuide(true);
+                }}
+                style={{
+                  padding: "var(--spacing-2) var(--spacing-4)", borderRadius: "var(--radius-md)", border: "none", background: "var(--color-primary)", color: "var(--color-on-primary)", cursor: "pointer", fontSize: "var(--font-size-sm)", fontWeight: 600,
+                }}
+              >
                 Начать работу
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </ThemeProvider>
   );
 }

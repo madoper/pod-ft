@@ -1,0 +1,31 @@
+﻿[data-theme="dark"] {
+  --color-primary: #9FA8DA;
+  --color-on-primary: #0D1342;
+  --color-surface: #16181D;
+  --color-surface-alt: #26282E;
+  --color-text: #F7F8FA;
+  --color-text-secondary: #9DA0AC;
+  --color-border: #3D404A;
+  --color-info: #7986CB;
+
+  --sidebar-bg: #26282E;
+  --sidebar-active: #1A237E;
+  --sidebar-active-text: #9FA8DA;
+  --sidebar-icon: #7C7F8A;
+
+  --topbar-bg: #26282E;
+  --topbar-border: #3D404A;
+
+  --card-bg: #26282E;
+  --card-border: #3D404A;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
+
+  --input-bg: #26282E;
+  --input-border: #3D404A;
+  --input-focus: #9FA8DA;
+}
+
+[data-theme="dark"] ::selection {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
