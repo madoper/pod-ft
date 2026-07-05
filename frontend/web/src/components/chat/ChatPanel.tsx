@@ -1,11 +1,4 @@
 ﻿import { useCallback, useEffect, useReducer, useRef } from "react";
-import type { CitationLabel } from "../../api";
-
-declare global {
-  interface Window {
-    __streamCitations?: CitationLabel[];
-  }
-}
 import { chatReducer, initialChatState, type Message } from "../../hooks/useChat";
 import {
   createChatSession,
@@ -41,7 +34,6 @@ export default function ChatPanel() {
 
     let sessionId = state.activeSessionId;
 
-    // Create session if none active
     if (!sessionId) {
       const session = await createChatSession(question.slice(0, 50));
       if (session) {
@@ -54,18 +46,14 @@ export default function ChatPanel() {
       }
     }
 
-    // Add user message
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
       content: question,
     };
     dispatch({ type: "ADD_USER_MESSAGE", message: userMsg });
-
-    // Start streaming
     dispatch({ type: "START_STREAMING" });
 
-    // Call the answer API to trigger processing
     try {
       const answerRes = await apiAskQuestion(question);
       if (answerRes.status === "refused") {
@@ -74,18 +62,25 @@ export default function ChatPanel() {
         return;
       }
 
-      // Stream the result
+      const ansSessionId = answerRes.answer_session_id;
+      if (!ansSessionId) {
+        dispatch({ type: "SET_ERROR", error: "No answer session ID" });
+        return;
+      }
+
       const controller = await streamAnswer(
-        sessionId,
+        ansSessionId,
         (token) => dispatch({ type: "STREAM_TOKEN", text: token }),
         (citations) => {
-          // Store citations for later
-          window.__streamCitations = citations;
+          const msgs = state.messages;
+          const last = msgs[msgs.length - 1];
+          if (last && last.role === "assistant") {
+            last.citations = citations as any;
+          }
         },
         () => {
-          const citations = (window as any).__streamCitations || answerRes.evidence || [];
+          const citations = answerRes.evidence || [];
           dispatch({ type: "FINISH_STREAMING", citations });
-          (window as any).__streamCitations = undefined;
         },
         (err) => dispatch({ type: "SET_ERROR", error: err }),
       );
@@ -94,7 +89,7 @@ export default function ChatPanel() {
       const msg = err instanceof Error ? err.message : "Unknown error";
       dispatch({ type: "SET_ERROR", error: msg });
     }
-  }, [state.inputText, state.streaming, state.activeSessionId]);
+  }, [state.inputText, state.streaming, state.activeSessionId, state.messages]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-surface)", borderRadius: "var(--radius-lg)", overflow: "hidden", border: "1px solid var(--color-border)" }}>
