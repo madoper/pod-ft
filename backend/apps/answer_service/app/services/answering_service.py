@@ -108,21 +108,26 @@ class AnsweringService:
                 "fragment_id": f["fragment_id"],
                 "document_title": f.get("document_title"),
                 "citation_label": f.get("citation_label", ""),
-                "quote": f.get("fragment_text", "")[:200],
+                "quote": f.get("fragment_text", "")[:500],
                 "source_url": f.get("source_domain"),
             }
             citations.append(citation)
             text_parts.append(f.get("fragment_text", ""))
 
-        summary = "Based on the retrieved regulatory fragments:\n"
-        summary += "\n".join(f"- {p[:100]}" for p in text_parts)
+        summary = "На основании найденных нормативных фрагментов:\n"
+        for i, (frag, text) in enumerate(
+            zip(fragments[:5], text_parts, strict=True), start=1
+        ):
+            label = frag.get("citation_label", "")
+            summary += f"\n{i}. [{label}] {text[:300]}"
 
         return {
             "summary": summary,
             "citations": citations,
             "applicability_explanation": [
-                f"Query matched {len(fragments)} Tier-1 fragments.",
-                f"Candidate fragments meet sufficiency policy: {len(fragments) >= 2}.",
+                f"По запросу найдено {len(fragments)} фрагментов Tier-1.",
+                "Количество фрагментов соответствует критерию достаточности:"
+            f" {len(fragments) >= 2}.",
             ],
         }
 
