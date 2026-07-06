@@ -58,7 +58,7 @@ export default function ChatPanel() {
       const answerRes = await apiAskQuestion(question);
       if (answerRes.status === "refused") {
         dispatch({ type: "STREAM_TOKEN", text: answerRes.answer || "Недостаточно данных для ответа." });
-        dispatch({ type: "FINISH_STREAMING", citations: [] });
+        dispatch({ type: "FINISH_STREAMING", citations: [], llmSummary: null });
         return;
       }
 
@@ -78,9 +78,9 @@ export default function ChatPanel() {
             last.citations = citations as any;
           }
         },
-        () => {
+        (llmSummary) => {
           const citations = answerRes.evidence || [];
-          dispatch({ type: "FINISH_STREAMING", citations });
+          dispatch({ type: "FINISH_STREAMING", citations, llmSummary: llmSummary ?? answerRes.llmSummary });
         },
         (err) => dispatch({ type: "SET_ERROR", error: err }),
       );

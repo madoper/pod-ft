@@ -21,12 +21,14 @@ class CitationDto(BaseModel):
     quote: str
     source_url: str | None = None
     version_effective_from: date | None = None
+    confidence_score: float = 0.0
 
 
 class AnswerDto(BaseModel):
     summary: str
     citations: list[CitationDto]
     applicability_explanation: list[str] = []
+    llm_summary: str | None = None
 
 
 class AnswerQuestionResponse(BaseModel):

@@ -87,3 +87,21 @@ def create_llm_router() -> LlmProviderRouter:
         providers["mock"] = MockProvider()
 
     return LlmProviderRouter(providers)
+
+
+def create_summarization_router() -> LlmProviderRouter | None:
+    """Factory for summarization-specific LLM router. Returns None if no API key."""
+    if not settings.llm_api_key:
+        return None
+    prov: dict[str, BaseLlmClient] = {}
+    if settings.llm_summarization_provider == "openrouter":
+        prov["summarization"] = OpenRouterClient(
+            model=settings.llm_summarization_model
+        )
+    elif settings.llm_summarization_provider == "openai":
+        prov["summarization"] = OpenAiClient()
+    else:
+        prov["summarization"] = OpenRouterClient(
+            model=settings.llm_summarization_model
+        )
+    return LlmProviderRouter(prov)

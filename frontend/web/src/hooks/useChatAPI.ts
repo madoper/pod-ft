@@ -59,7 +59,7 @@ export async function streamAnswer(
   sessionId: string,
   onToken: (token: string) => void,
   onCitations: (citations: CitationLabel[]) => void,
-  onDone: () => void,
+  onDone: (llmSummary?: string | null) => void,
   onError: (err: string) => void,
 ): Promise<AbortController> {
   const controller = new AbortController();
@@ -81,6 +81,7 @@ export async function streamAnswer(
 
     const decoder = new TextDecoder();
     let buffer = "";
+    let llmSummary: string | null = null;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -94,7 +95,7 @@ export async function streamAnswer(
         if (!line.startsWith("data: ")) continue;
         const data = line.slice(6).trim();
         if (data === "[DONE]") {
-          onDone();
+          onDone(llmSummary);
           continue;
         }
         try {
@@ -103,6 +104,8 @@ export async function streamAnswer(
             onToken(parsed.text);
           } else if (parsed.type === "citations") {
             onCitations(parsed.citations);
+          } else if (parsed.type === "summary") {
+            llmSummary = parsed.text;
           } else if (parsed.type === "error") {
             onError(parsed.reason_code || "Unknown error");
           }
@@ -111,7 +114,7 @@ export async function streamAnswer(
         }
       }
     }
-    onDone();
+    onDone(llmSummary);
   } catch (err: unknown) {
     if (err instanceof Error && err.name !== "AbortError") {
       onError(err.message);

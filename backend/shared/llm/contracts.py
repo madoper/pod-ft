@@ -9,6 +9,7 @@ class LlmTaskType:
     RERANK = "rerank"
     DRAFTING = "drafting"
     VERIFICATION = "verification"
+    SUMMARIZATION = "summarization"
 
 
 class LlmRequest(BaseModel):

@@ -74,8 +74,13 @@ async def answer_stream(session_id: str) -> StreamingResponse:
 
     summary = answer.get("summary", "")
     citations = answer.get("citations", [])
+    llm_summary = answer.get("llm_summary")
 
     async def event_stream() -> AsyncGenerator[str, None]:
+        if llm_summary:
+            yield f"data: {json.dumps({'type': 'summary', 'text': llm_summary})}\n\n"
+            await asyncio.sleep(0.1)
+
         yield f"data: {json.dumps({'type': 'citations', 'citations': citations})}\n\n"
         await asyncio.sleep(0.1)
 

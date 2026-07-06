@@ -1,5 +1,6 @@
 ﻿import type { Message } from "../../hooks/useChat";
 import { MessageSquare, Bot } from "lucide-react";
+import CitationCard from "./CitationCard";
 
 interface ChatHistoryProps {
   messages: Message[];
@@ -37,38 +38,63 @@ export default function ChatHistory({ messages, streamingText, streaming }: Chat
             {msg.role === "user" ? <MessageSquare size={14} /> : <Bot size={14} />}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                background: msg.role === "user" ? "var(--color-primary)" : "var(--card-bg)",
-                color: msg.role === "user" ? "var(--color-on-primary)" : "var(--color-text)",
-                borderRadius: "var(--radius-md)",
-                padding: "var(--spacing-3)",
-                fontSize: "var(--font-size-sm)",
-                lineHeight: "var(--line-height-body)",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
-            >
-              {msg.content}
-            </div>
-            {msg.citations && msg.citations.length > 0 && (
-              <div style={{ marginTop: "var(--spacing-2)", display: "flex", flexWrap: "wrap", gap: "var(--spacing-1)" }}>
-                {msg.citations.map((c, i) => (
-                  <span
-                    key={i}
+            {msg.role === "user" ? (
+              <div
+                style={{
+                  background: "var(--color-primary)",
+                  color: "var(--color-on-primary)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "var(--spacing-3)",
+                  fontSize: "var(--font-size-sm)",
+                  lineHeight: "var(--line-height-body)",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {msg.content}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-3)" }}>
+                {msg.llmSummary && (
+                  <div
                     style={{
-                      padding: "2px var(--spacing-2)",
-                      borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--color-border)",
-                      fontSize: "var(--font-size-xs)",
-                      color: "var(--color-primary)",
                       background: "var(--color-surface)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--spacing-3)",
+                      fontSize: "var(--font-size-sm)",
+                      lineHeight: "var(--line-height-body)",
+                      border: "1px solid var(--color-border)",
                     }}
-                    title={c.text}
                   >
-                    {c.label || `[${i + 1}]`}
-                  </span>
-                ))}
+                    <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 600, color: "var(--color-primary)", marginBottom: "var(--spacing-1)" }}>
+                      Краткое изложение
+                    </div>
+                    <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.llmSummary}</div>
+                  </div>
+                )}
+                <div
+                  style={{
+                    background: "var(--card-bg)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "var(--spacing-3)",
+                    fontSize: "var(--font-size-sm)",
+                    lineHeight: "var(--line-height-body)",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {msg.content}
+                </div>
+                {msg.citations && msg.citations.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-2)" }}>
+                    <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 600, color: "var(--color-text-secondary)" }}>
+                      Источники ({msg.citations.length})
+                    </div>
+                    {msg.citations.map((c, i) => (
+                      <CitationCard key={i} citation={c} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

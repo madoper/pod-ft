@@ -5,6 +5,7 @@ export type Message = {
   role: "user" | "assistant";
   content: string;
   citations?: CitationLabel[];
+  llmSummary?: string | null;
 };
 
 export type ChatSession = {
@@ -32,7 +33,7 @@ export type ChatAction =
   | { type: "ADD_USER_MESSAGE"; message: Message }
   | { type: "START_STREAMING" }
   | { type: "STREAM_TOKEN"; text: string }
-  | { type: "FINISH_STREAMING"; citations?: CitationLabel[] }
+  | { type: "FINISH_STREAMING"; citations?: CitationLabel[]; llmSummary?: string | null }
   | { type: "SET_ERROR"; error: string }
   | { type: "SET_INPUT"; text: string }
   | { type: "ADD_SESSION"; session: ChatSession };
@@ -67,6 +68,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         role: "assistant",
         content: state.streamingText,
         citations: action.citations,
+        llmSummary: action.llmSummary,
       };
       return {
         ...state,

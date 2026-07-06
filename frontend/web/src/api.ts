@@ -5,6 +5,7 @@ export interface CitationLabel {
   text: string;
   source: string;
   version?: string;
+  confidenceScore?: number;
 }
 
 export interface AnswerResponse {
@@ -14,6 +15,7 @@ export interface AnswerResponse {
   status?: string;
   evidence_count?: number;
   verifier_status?: string;
+  llmSummary?: string | null;
 }
 
 export interface CheckResponse {
@@ -59,6 +61,7 @@ export async function askQuestion(
     text: c.quote || "",
     source: c.document_title || c.source_url || "",
     version: c.version_effective_from || undefined,
+    confidenceScore: c.confidence_score ?? undefined,
   }));
   return {
     answer: summary,
@@ -67,6 +70,7 @@ export async function askQuestion(
     status: data.status,
     evidence_count: data.evidence_count,
     verifier_status: data.verifier_status,
+    llmSummary: data.answer?.llm_summary ?? null,
   };
 }
 

@@ -99,7 +99,7 @@ class RetrievalService:
             return self._substring_fallback(query, top_k, regulator)
 
         # Fuse with reciprocal rank fusion
-        fused = self._rrf_fuse(bm25_results, qdrant_results, top_k)
+        fused = self._rrf_fuse(bm25_results, qdrant_results, top_k, query=query)
         return fused
 
     async def _search_bm25(
@@ -127,7 +127,7 @@ class RetrievalService:
         results = []
         for fid, score in top:
             frag = self._shared._fragments[fid]
-            results.append(self._make_result(frag, score))
+            results.append(self._make_result(frag, score, query=query))
         return results
 
     async def _search_qdrant(
@@ -150,6 +150,7 @@ class RetrievalService:
         qdrant: list[dict[str, Any]],
         top_k: int,
         k: int = 60,
+        query: str = "",
     ) -> list[dict[str, Any]]:
         """Reciprocal rank fusion of two result lists."""
         scores: dict[str, float] = {}
@@ -164,22 +165,44 @@ class RetrievalService:
             fid = r["fragment_id"]
             scores[fid] = scores.get(fid, 0) + 1.0 / (k + rank + 1)
             if fid not in store:
-                store[fid] = r
+                store[fid] = self._make_result(
+                    self._shared._fragments.get(fid, {}),
+                    0,
+                    query=query,
+                )
+
+        for item in store.values():
+            if "confidence_score" not in item:
+                item["confidence_score"] = round(scores.get(item["fragment_id"], 0) * 100, 1)
 
         ranked = sorted(store.values(), key=lambda x: scores.get(x["fragment_id"], 0), reverse=True)
         return ranked[:top_k]
 
-    def _make_result(self, frag: dict[str, Any], score: float) -> dict[str, Any]:
+    def _make_result(self, frag: dict[str, Any], score: float, query: str = "") -> dict[str, Any]:
+        text = frag.get("fragment_text", "")
+        if query:
+            text = self._highlight_keywords(text, query)
         return {
             "fragment_id": frag["fragment_id"],
             "document_title": frag.get("document_title"),
-            "fragment_text": frag.get("fragment_text", ""),
+            "fragment_text": text,
             "citation_label": frag.get("citation_label", ""),
             "score": round(score, 4),
+            "confidence_score": round(score * 100, 1),
             "tier": frag.get("tier", 1),
             "confidence": frag.get("confidence", 0.8),
             "source_domain": frag.get("source_domain"),
         }
+
+    @staticmethod
+    def _highlight_keywords(text: str, query: str) -> str:
+        tokens = re.findall(r"\w{4,}", query.lower())
+        if not tokens:
+            return text
+        for token in sorted(tokens, key=len, reverse=True):
+            pattern = re.compile(re.escape(token), re.IGNORECASE)
+            text = pattern.sub(lambda m: f"<mark class=\"hl\">{m.group()}</mark>", text)
+        return text
 
     async def list_fragments(self) -> list[dict[str, Any]]:
         return list(self._shared._fragments.values())
@@ -273,12 +296,15 @@ class RetrievalService:
                         score += 0.5
                         break
             if score > 0:
+                text = frag.get("fragment_text", "")
+                highlighted = self._highlight_keywords(text, query)
                 results.append({
                     "fragment_id": fid,
                     "document_title": frag.get("document_title"),
-                    "fragment_text": frag.get("fragment_text", ""),
+                    "fragment_text": highlighted,
                     "citation_label": frag.get("citation_label", ""),
                     "score": round(score, 4),
+                    "confidence_score": round(score * 100, 1),
                     "tier": frag.get("tier", 1),
                     "confidence": frag.get("confidence", 0.8),
                     "source_domain": frag.get("source_domain"),

@@ -8,10 +8,12 @@ from typing import Any
 
 from backend.apps.retrieval.app.services.retrieval_service import RetrievalService
 from backend.apps.verification.app.services.sufficiency_policy import SufficiencyPolicy
+from backend.shared.llm.contracts import LlmRequest, LlmTaskType
+from backend.shared.llm.provider_router import create_summarization_router
 
 
 class AnsweringService:
-    """Orchestrates the full answer flow: retrieval → verification → compose.
+    """Orchestrates the full answer flow: retrieval → verification → compose → summarize.
 
     Implements the orchestration loop from spec section 13.2.
     """
@@ -20,6 +22,7 @@ class AnsweringService:
         self._sessions: dict[str, dict[str, Any]] = {}
         self._retrieval = RetrievalService()
         self._policy = SufficiencyPolicy()
+        self._summary_llm = create_summarization_router()
 
     async def answer(
         self,
@@ -81,7 +84,10 @@ class AnsweringService:
                 "answer": None,
             }
 
-        # Step 5: Store evidence trail
+        # Step 5: LLM summarization
+        draft["llm_summary"] = await self._summarize(question, fragments)
+
+        # Step 6: Store evidence trail
         evidence = self._build_evidence(fragments)
         session["status"] = "ok"
         session["evidence"] = evidence
@@ -101,15 +107,21 @@ class AnsweringService:
     def _compose_answer(
         self, question: str, fragments: list[dict[str, Any]]  # noqa: ARG002
     ) -> dict[str, Any]:
+        sorted_frags = sorted(
+            fragments,
+            key=lambda f: f.get("confidence_score", 0),
+            reverse=True,
+        )
         citations = []
         text_parts = []
 
-        for f in fragments[:5]:
+        for f in sorted_frags[:5]:
             citation = {
                 "fragment_id": f["fragment_id"],
                 "document_title": f.get("document_title"),
                 "citation_label": f.get("citation_label", ""),
                 "quote": f.get("fragment_text", "")[:500],
+                "confidence_score": f.get("confidence_score", 0),
                 "source_url": f.get("source_domain"),
             }
             citations.append(citation)
@@ -117,7 +129,7 @@ class AnsweringService:
 
         summary = "На основании найденных нормативных фрагментов:\n"
         for i, (frag, text) in enumerate(
-            zip(fragments[:5], text_parts, strict=True), start=1
+            zip(sorted_frags[:5], text_parts, strict=True), start=1
         ):
             label = frag.get("citation_label", "")
             summary += f"\n{i}. [{label}] {text[:300]}"
@@ -130,7 +142,31 @@ class AnsweringService:
                 "Количество фрагментов соответствует критерию достаточности:"
             f" {len(fragments) >= 2}.",
             ],
+            "llm_summary": None,
         }
+
+    async def _summarize(self, question: str, fragments: list[dict[str, Any]]) -> str | None:
+        if not self._summary_llm:
+            return None
+        texts = "\n".join(
+            f.get("fragment_text", "")[:500] for f in fragments[:5]
+        )
+        prompt = (
+            "Краткое, понятное изложение сути запроса на русском по найденным фрагментам.\n\n"
+            f"Запрос пользователя: {question}\n\n"
+            f"Фрагменты нормативных документов:\n{texts}\n\n"
+            "Дай краткий ответ на русском, 2-3 предложения, без цитирования."
+        )
+        try:
+            req = LlmRequest(
+                prompt=prompt,
+                task_type=LlmTaskType.SUMMARIZATION,
+                temperature=0.3,
+            )
+            result = await self._summary_llm.invoke(req)
+            return result.content.strip() if result and result.content else None
+        except Exception:
+            return None
 
     def _build_evidence(self, fragments: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [

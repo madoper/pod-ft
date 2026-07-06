@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     llm_provider: str = "openai"
     llm_api_key: str = ""
     llm_model: str = "gpt-4o-mini"
+    llm_summarization_provider: str = "openrouter"
+    llm_summarization_model: str = "qwen/qwen3-next-80b-a3b-instruct:free"
 
     @property
     def postgres_dsn(self) -> str:
