@@ -85,6 +85,7 @@ class AnsweringService:
         evidence = self._build_evidence(fragments)
         session["status"] = "ok"
         session["evidence"] = evidence
+        session["answer"] = draft
 
         return {
             "session_id": session_id,
