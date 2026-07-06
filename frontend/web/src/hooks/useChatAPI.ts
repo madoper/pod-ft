@@ -82,6 +82,7 @@ export async function streamAnswer(
     const decoder = new TextDecoder();
     let buffer = "";
     let llmSummary: string | null = null;
+    let doneCalled = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -96,6 +97,7 @@ export async function streamAnswer(
         const data = line.slice(6).trim();
         if (data === "[DONE]") {
           onDone(llmSummary);
+          doneCalled = true;
           continue;
         }
         try {
@@ -114,7 +116,9 @@ export async function streamAnswer(
         }
       }
     }
-    onDone(llmSummary);
+    if (!doneCalled) {
+      onDone(llmSummary);
+    }
   } catch (err: unknown) {
     if (err instanceof Error && err.name !== "AbortError") {
       onError(err.message);
