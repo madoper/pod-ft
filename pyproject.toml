@@ -1,6 +1,6 @@
 [project]
 name = "podft-rag-platform"
-version = "0.1.0"
+version = "0.5.0"
 description = "LLM RAG platform for Russian AML/CFT (ПОД/ФТ/ФРОМУ) regulatory compliance"
 requires-python = ">=3.12"
 authors = [{ name = "madoper" }]

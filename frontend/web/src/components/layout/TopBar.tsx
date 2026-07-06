@@ -21,8 +21,9 @@ export default function TopBar({ title = "ИИ помощник по ПОД/ФТ
         gap: "var(--spacing-4)",
       }}
     >
-      <span style={{ fontWeight: 600, fontSize: "var(--font-size-base)", color: "var(--color-text)" }}>
+      <span style={{ fontWeight: 600, fontSize: "var(--font-size-base)", color: "var(--color-text)", display: "flex", alignItems: "center", gap: "var(--spacing-2)" }}>
         {title}
+        <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", opacity: 0.6 }}>v0.5</span>
       </span>
 
       <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-2)" }}>

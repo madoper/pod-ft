@@ -72,19 +72,21 @@ export default function ChatHistory({ messages, streamingText, streaming }: Chat
                     <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.llmSummary}</div>
                   </div>
                 )}
-                <div
-                  style={{
-                    background: "var(--card-bg)",
-                    borderRadius: "var(--radius-md)",
-                    padding: "var(--spacing-3)",
-                    fontSize: "var(--font-size-sm)",
-                    lineHeight: "var(--line-height-body)",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {msg.content}
-                </div>
+                {!msg.llmSummary && msg.content && (
+                  <div
+                    style={{
+                      background: "var(--card-bg)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--spacing-3)",
+                      fontSize: "var(--font-size-sm)",
+                      lineHeight: "var(--line-height-body)",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+                )}
                 {msg.citations && msg.citations.length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-2)" }}>
                     <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 600, color: "var(--color-text-secondary)" }}>

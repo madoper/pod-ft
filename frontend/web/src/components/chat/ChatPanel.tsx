@@ -71,13 +71,7 @@ export default function ChatPanel() {
       const controller = await streamAnswer(
         ansSessionId,
         (token) => dispatch({ type: "STREAM_TOKEN", text: token }),
-        (citations) => {
-          const msgs = state.messages;
-          const last = msgs[msgs.length - 1];
-          if (last && last.role === "assistant") {
-            last.citations = citations as any;
-          }
-        },
+        () => {},  // citations come via answerRes.evidence
         (llmSummary) => {
           const citations = answerRes.evidence || [];
           dispatch({ type: "FINISH_STREAMING", citations, llmSummary: llmSummary ?? answerRes.llmSummary });

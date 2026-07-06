@@ -127,7 +127,17 @@ class AnsweringService:
             }
             citations.append(citation)
 
-        summary = f"По вашему запросу найдено {len(fragments)} фрагментов нормативных документов."
+        summary_parts = [
+            "По вашему запросу найдены следующие нормы:\n"
+        ]
+        for f in sorted_frags[:5]:
+            label = f.get("citation_label", "")
+            text = self._strip_html(f.get("fragment_text", ""))[:300]
+            if label:
+                summary_parts.append(f"• [{label}] {text}")
+            else:
+                summary_parts.append(f"• {text}")
+        summary = "\n\n".join(summary_parts)
 
         return {
             "summary": summary,
@@ -141,28 +151,38 @@ class AnsweringService:
         }
 
     async def _summarize(self, question: str, fragments: list[dict[str, Any]]) -> str | None:
-        if not self._summary_llm:
-            return None
-        texts = "\n".join(
-            self._strip_html(f.get("fragment_text", ""))[:500] for f in fragments[:5]
-        )
-        prompt = (
-            "Краткое, понятное изложение сути запроса на русском по найденным фрагментам.\n\n"
-            f"Запрос пользователя: {question}\n\n"
-            f"Фрагменты нормативных документов:\n{texts}\n\n"
-            "Дай краткий ответ на русском, 2-3 предложения, без цитирования."
-        )
-        try:
-            req = LlmRequest(
-                prompt=prompt,
-                task_type=LlmTaskType.SUMMARIZATION,
-                temperature=0.3,
+        if self._summary_llm:
+            texts = "\n".join(
+                self._strip_html(f.get("fragment_text", ""))[:500] for f in fragments[:5]
             )
-            result = await self._summary_llm.invoke(req)
-            return result.content.strip() if result and result.content else None
-        except Exception:
-            logging.warning("LLM summarization failed for question: %s", question, exc_info=True)
+            prompt = (
+                "Краткое, понятное изложение сути запроса на русском по найденным фрагментам.\n\n"
+                f"Запрос пользователя: {question}\n\n"
+                f"Фрагменты нормативных документов:\n{texts}\n\n"
+                "Дай краткий ответ на русском, 2-3 предложения, без цитирования."
+            )
+            try:
+                req = LlmRequest(
+                    prompt=prompt,
+                    task_type=LlmTaskType.SUMMARIZATION,
+                    temperature=0.3,
+                )
+                result = await self._summary_llm.invoke(req)
+                return result.content.strip() if result and result.content else None
+            except Exception:
+                logging.warning("LLM summarization failed", exc_info=True)
+                return None
+
+        # Fallback: build readable summary from top fragments
+        top = [f for f in fragments[:3] if f.get("fragment_text")]
+        if not top:
             return None
+        parts = []
+        for f in top:
+            label = f.get("citation_label", "")
+            text = self._strip_html(f.get("fragment_text", ""))[:200]
+            parts.append(f"{label}: {text}" if label else text)
+        return "Найдены следующие нормы:\n" + "\n".join(parts)
 
     @staticmethod
     def _strip_html(text: str) -> str:

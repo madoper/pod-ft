@@ -3,6 +3,8 @@ __anchor__ = "settings"
 
 from pydantic_settings import BaseSettings
 
+APP_VERSION: str = "0.5.0"
+
 
 class Settings(BaseSettings):
     app_env: str = "development"

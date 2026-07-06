@@ -59,15 +59,20 @@ async def process_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
             if resp.status_code == 200:
                 data = resp.json()
-                answer_text = data.get("answer", "Ответ не получен.")
-                evidence = data.get("evidence", [])
+                answer_data = data.get("answer") or {}
+                summary = answer_data.get("summary", "Ответ не получен.")
+                llm_summary = answer_data.get("llm_summary")
+                citations = answer_data.get("citations", [])
 
-                text = f"💡 *Ответ:*\n{answer_text}\n\n"
-                if evidence:
+                text = ""
+                if llm_summary:
+                    text += f"💡 *Краткое изложение:*\n{llm_summary}\n\n"
+                text += f"*Ответ:*\n{summary}\n\n"
+                if citations:
                     text += "*Источники:*\n"
-                    for i, e in enumerate(evidence[:5], 1):
-                        label = e.get("citation_label", f"Фрагмент {i}")
-                        snippet = e.get("text", "")[:150]
+                    for i, c in enumerate(citations[:5], 1):
+                        label = c.get("citation_label", f"Фрагмент {i}")
+                        snippet = c.get("quote", "")[:150]
                         text += f"  {i}. {label}: {snippet}...\n"
                 else:
                     text += "_Нет цитируемых источников._"
