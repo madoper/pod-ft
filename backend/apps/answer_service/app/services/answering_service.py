@@ -3,6 +3,7 @@ __anchor__ = "answer-service"
 # schema-ref: production-tech-project-podft-rag-dev-spec.md#/13.2 Answering orchestration
 
 import logging
+import re
 import uuid
 from datetime import UTC, date, datetime
 from typing import Any
@@ -114,7 +115,6 @@ class AnsweringService:
             reverse=True,
         )
         citations = []
-        text_parts = []
 
         for f in sorted_frags[:5]:
             citation = {
@@ -126,14 +126,8 @@ class AnsweringService:
                 "source_url": f.get("source_domain"),
             }
             citations.append(citation)
-            text_parts.append(f.get("fragment_text", ""))
 
-        summary = "На основании найденных нормативных фрагментов:\n"
-        for i, (frag, text) in enumerate(
-            zip(sorted_frags[:5], text_parts, strict=True), start=1
-        ):
-            label = frag.get("citation_label", "")
-            summary += f"\n{i}. [{label}] {text[:300]}"
+        summary = f"По вашему запросу найдено {len(fragments)} фрагментов нормативных документов."
 
         return {
             "summary": summary,
@@ -150,7 +144,7 @@ class AnsweringService:
         if not self._summary_llm:
             return None
         texts = "\n".join(
-            f.get("fragment_text", "")[:500] for f in fragments[:5]
+            self._strip_html(f.get("fragment_text", ""))[:500] for f in fragments[:5]
         )
         prompt = (
             "Краткое, понятное изложение сути запроса на русском по найденным фрагментам.\n\n"
@@ -169,6 +163,10 @@ class AnsweringService:
         except Exception:
             logging.warning("LLM summarization failed for question: %s", question, exc_info=True)
             return None
+
+    @staticmethod
+    def _strip_html(text: str) -> str:
+        return re.sub(r'<[^>]+>', '', text)
 
     def _build_evidence(self, fragments: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
