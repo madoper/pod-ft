@@ -1,6 +1,7 @@
 ﻿__anchor__ = "gateway"
 # schema-ref: project-schema.yaml#/services/0
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -47,9 +48,21 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         from backend.apps.retrieval.app.services.retrieval_service import RetrievalService
         from backend.shared.data.seed_fragments import ALL_SEED_FRAGMENTS
         retrieval = RetrievalService()
-        seed_count = await retrieval.index_fragments(ALL_SEED_FRAGMENTS)
+        seed_count = 0
+        try:
+            seed_count = await asyncio.wait_for(
+                retrieval.index_fragments(ALL_SEED_FRAGMENTS), timeout=10
+            )
+        except TimeoutError:
+            logger.warning("gateway: seed timed out (10s)")
         logger.info("gateway: seeded %d regulatory fragments", seed_count)
-        qdrant_count = await retrieval.load_from_qdrant()
+        qdrant_count = 0
+        try:
+            qdrant_count = await asyncio.wait_for(
+                retrieval.load_from_qdrant(), timeout=10
+            )
+        except TimeoutError:
+            logger.warning("gateway: Qdrant restore timed out (10s), skipping")
         if qdrant_count > 0:
             logger.info("gateway: restored %d fragments from Qdrant", qdrant_count)
     except Exception as exc:

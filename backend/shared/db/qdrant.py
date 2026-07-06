@@ -41,6 +41,7 @@ class QdrantClient:
             host=settings.qdrant_host,
             port=settings.qdrant_port,
             prefer_grpc=False,
+            timeout=10,
         )
         await self._ensure_collection()
 
