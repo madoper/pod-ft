@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "gpt-4o-mini"
     llm_summarization_provider: str = "openrouter"
-    llm_summarization_model: str = "qwen/qwen3-next-80b-a3b-instruct:free"
+    llm_summarization_model: str = "google/gemini-2.0-flash-001"
 
     @property
     def postgres_dsn(self) -> str:

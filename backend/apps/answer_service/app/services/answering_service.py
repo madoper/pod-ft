@@ -2,6 +2,7 @@ __anchor__ = "answer-service"
 # schema-ref: project-schema.yaml#/services/10
 # schema-ref: production-tech-project-podft-rag-dev-spec.md#/13.2 Answering orchestration
 
+import logging
 import uuid
 from datetime import UTC, date, datetime
 from typing import Any
@@ -166,6 +167,7 @@ class AnsweringService:
             result = await self._summary_llm.invoke(req)
             return result.content.strip() if result and result.content else None
         except Exception:
+            logging.warning("LLM summarization failed for question: %s", question, exc_info=True)
             return None
 
     def _build_evidence(self, fragments: list[dict[str, Any]]) -> list[dict[str, Any]]:

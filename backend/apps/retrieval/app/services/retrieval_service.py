@@ -96,10 +96,13 @@ class RetrievalService:
         qdrant_results = await self._search_qdrant(query, top_k)
 
         if not bm25_results and not qdrant_results:
-            return self._substring_fallback(query, top_k, regulator)
+            results = self._substring_fallback(query, top_k, regulator)
+            self._normalize_scores(results)
+            return results
 
         # Fuse with reciprocal rank fusion
         fused = self._rrf_fuse(bm25_results, qdrant_results, top_k, query=query)
+        self._normalize_scores(fused)
         return fused
 
     async def _search_bm25(
@@ -171,10 +174,6 @@ class RetrievalService:
                     query=query,
                 )
 
-        for item in store.values():
-            if "confidence_score" not in item:
-                item["confidence_score"] = round(scores.get(item["fragment_id"], 0) * 100, 1)
-
         ranked = sorted(store.values(), key=lambda x: scores.get(x["fragment_id"], 0), reverse=True)
         return ranked[:top_k]
 
@@ -188,20 +187,48 @@ class RetrievalService:
             "fragment_text": text,
             "citation_label": frag.get("citation_label", ""),
             "score": round(score, 4),
-            "confidence_score": round(score * 100, 1),
+            "confidence_score": 0.0,
             "tier": frag.get("tier", 1),
             "confidence": frag.get("confidence", 0.8),
             "source_domain": frag.get("source_domain"),
         }
 
     @staticmethod
+    def _normalize_scores(results: list[dict[str, Any]]) -> None:
+        max_s = max((r["score"] for r in results), default=1.0)
+        for r in results:
+            r["confidence_score"] = round((r["score"] / max_s) * 100, 1)
+
+    @staticmethod
     def _highlight_keywords(text: str, query: str) -> str:
         tokens = re.findall(r"\w{4,}", query.lower())
         if not tokens:
             return text
+        try:
+            import pymorphy2
+            morph = pymorphy2.MorphAnalyzer()
+            query_lemmas: set[str] = set()
+            for t in tokens:
+                parsed = morph.parse(t)
+                if parsed:
+                    query_lemmas.add(parsed[0].normal_form.lower())
+            if not query_lemmas:
+                return text
+
+            def replace_match(m: re.Match[str]) -> str:
+                word = m.group()
+                parsed = morph.parse(word)
+                if parsed and parsed[0].normal_form.lower() in query_lemmas:
+                    return f'<mark class="hl">{word}</mark>'
+                return str(word)
+
+            return re.sub(r'\b\w+\b', replace_match, text)
+        except ImportError:
+            pass
+        # Fallback: exact match
         for token in sorted(tokens, key=len, reverse=True):
             pattern = re.compile(re.escape(token), re.IGNORECASE)
-            text = pattern.sub(lambda m: f"<mark class=\"hl\">{m.group()}</mark>", text)
+            text = pattern.sub(lambda m: f'<mark class="hl">{m.group()}</mark>', text)
         return text
 
     async def list_fragments(self) -> list[dict[str, Any]]:
@@ -304,7 +331,7 @@ class RetrievalService:
                     "fragment_text": highlighted,
                     "citation_label": frag.get("citation_label", ""),
                     "score": round(score, 4),
-                    "confidence_score": round(score * 100, 1),
+                    "confidence_score": 0.0,
                     "tier": frag.get("tier", 1),
                     "confidence": frag.get("confidence", 0.8),
                     "source_domain": frag.get("source_domain"),
