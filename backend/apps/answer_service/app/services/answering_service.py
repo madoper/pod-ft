@@ -173,20 +173,46 @@ class AnsweringService:
                 logging.warning("LLM summarization failed", exc_info=True)
                 return None
 
-        # Fallback: build readable summary from top fragments
-        top = [f for f in fragments[:3] if f.get("fragment_text")]
+        # Fallback: build readable connected text from top fragments
+        top = sorted(
+            [f for f in fragments[:5] if f.get("fragment_text")],
+            key=lambda f: f.get("confidence_score", 0),
+            reverse=True,
+        )
         if not top:
             return None
-        parts = []
+        statements = []
+        seen = set()
         for f in top:
+            text = self._strip_html(f.get("fragment_text", "")).strip()
+            if not text or text in seen:
+                continue
+            seen.add(text)
             label = f.get("citation_label", "")
-            text = self._strip_html(f.get("fragment_text", ""))[:200]
-            parts.append(f"{label}: {text}" if label else text)
-        return "Найдены следующие нормы:\n" + "\n".join(parts)
+            dot_pos = text.find('. ')
+            core = text[:dot_pos] if 30 < dot_pos < 200 else text[:200]
+            core = self._simplify_text(core.strip().rstrip(',;') + '.')
+            statements.append(
+                f"Согласно {label} {core[0].lower()}{core[1:]}" if label else core
+            )
+        if not statements:
+            return None
+        summary_text = statements[0]
+        for s in statements[1:]:
+            summary_text += f" Кроме того, {s[0].lower()}{s[1:]}"
+        return summary_text
 
     @staticmethod
     def _strip_html(text: str) -> str:
         return re.sub(r'<[^>]+>', '', text)
+
+    @staticmethod
+    def _simplify_text(text: str) -> str:
+        text = text.replace('и (или)', 'или')
+        text = re.sub(r'\(далее[^)]*\)', '', text)
+        text = re.sub(r'за исключением[^.]*\.', '.', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
 
     def _build_evidence(self, fragments: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [

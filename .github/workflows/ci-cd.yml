@@ -112,6 +112,11 @@ jobs:
             cd /opt/podft
             git pull origin main
             if ! grep -q "BOT_TOKEN" .env 2>/dev/null; then echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" >> .env; fi
+            if ! grep -q "LLM_API_KEY" .env 2>/dev/null; then
+              echo "LLM_API_KEY=${{ secrets.LLM_API_KEY }}" >> .env
+              echo "LLM_PROVIDER=openrouter" >> .env
+              echo "LLM_SUMMARIZATION_PROVIDER=openrouter" >> .env
+            fi
             docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml pull gateway web-frontend telegram-bot postgres qdrant redis minio
             docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.monolith.yml up -d --build --force-recreate
             sleep 10
