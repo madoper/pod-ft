@@ -168,12 +168,12 @@ class AnsweringService:
                     temperature=0.3,
                 )
                 result = await self._summary_llm.invoke(req)
-                return result.content.strip() if result and result.content else None
+                if result and result.content:
+                    return result.content.strip()
             except Exception:
                 logging.warning("LLM summarization failed", exc_info=True)
-                return None
 
-        # Fallback: build readable connected text from top fragments
+        # Fallback: LLM unavailable or failed — build readable connected text from top fragments
         top = sorted(
             [f for f in fragments[:5] if f.get("fragment_text")],
             key=lambda f: f.get("confidence_score", 0),
