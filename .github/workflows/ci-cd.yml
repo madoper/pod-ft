@@ -112,7 +112,8 @@ jobs:
             cd /opt/podft
             git pull origin main
             if ! grep -q "BOT_TOKEN" .env 2>/dev/null; then echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" >> .env; fi
-            if ! grep -q "LLM_API_KEY" .env 2>/dev/null; then
+            if ! grep -q "LLM_PROVIDER=openrouter" .env 2>/dev/null; then
+              sed -i "/^LLM_/d" .env 2>/dev/null || true
               echo "LLM_API_KEY=${{ secrets.LLM_API_KEY }}" >> .env
               echo "LLM_PROVIDER=openrouter" >> .env
               echo "LLM_SUMMARIZATION_PROVIDER=openrouter" >> .env
