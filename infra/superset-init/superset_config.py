@@ -1,35 +1,15 @@
 import os
-import logging
-
-logger = logging.getLogger(__name__)
 
 SECRET_KEY = os.getenv("SUPERSET_SECRET_KEY", "change-me")
 
-# Auto-create the superset database if it doesn't exist
 _db_host = os.getenv("POSTGRES_HOST", "postgres")
 _db_port = os.getenv("POSTGRES_PORT", "5432")
 _db_user = os.getenv("POSTGRES_USER", "podft")
 _db_pass = os.getenv("POSTGRES_PASSWORD", "podft-secret")
 _db_name = os.getenv("POSTGRES_DB", "superset")
 
-try:
-    import psycopg2
-    conn = psycopg2.connect(
-        host=_db_host, port=_db_port, user=_db_user, password=_db_pass, dbname="postgres"
-    )
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute(f"SELECT 1 FROM pg_database WHERE datname = '{_db_name}'")
-    if not cur.fetchone():
-        cur.execute(f'CREATE DATABASE "{_db_name}"')
-        logger.info("Created database %s", _db_name)
-    cur.close()
-    conn.close()
-except Exception:
-    logger.warning("Could not auto-create superset database", exc_info=True)
-
 SQLALCHEMY_DATABASE_URI = (
-    f"postgresql://{_db_user}:{_db_pass}@"
+    f"postgresql+psycopg2://{_db_user}:{_db_pass}@"
     f"{_db_host}:{_db_port}/{_db_name}"
 )
 
