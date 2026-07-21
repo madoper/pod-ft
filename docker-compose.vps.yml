@@ -12,3 +12,46 @@ services:
   nginx:
     profiles:
       - never
+
+volumes:
+  superset_data:
+
+  superset:
+    image: apache/superset:latest
+    container_name: podft-superset
+    restart: unless-stopped
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-podft-superset-secret-change-me}
+      SUPERSET_ENV: production
+      SUPERSET_LOAD_EXAMPLES: "no"
+      SUPERSET_PORT: 8088
+      SUPERSET_BASE_URL: /superset
+      SUPERSET_SERVER_NAME: vectornode.ru
+      PYTHONPATH: /app/pythonpath
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-podft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-podft-secret}
+      POSTGRES_DB: superset
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_CACHE_DB: 1
+    volumes:
+      - superset_data:/app/pythonpath
+      - ./infra/superset-init/superset_config.py:/app/pythonpath/superset_config.py:ro
+    ports:
+      - "127.0.0.1:8088:8088"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - podft-net
+    command: >
+      sh -c "
+      superset fab create-admin --username admin --firstname Admin --lastname User --email admin@vectornode.ru --password admin 2>/dev/null || true &&
+      superset db upgrade &&
+      superset init &&
+      gunicorn -w 2 -k gevent -b 0.0.0.0:8088 --timeout 120 --access-logfile - 'superset.app:create_app()'
+      "

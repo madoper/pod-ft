@@ -1,62 +1,34 @@
-import { useState, useEffect } from "react";
-import { fetchSources, fetchSubscription } from "../api";
+import { useState } from "react";
+
+const SUPERSET_URL = "/superset/";
 
 export default function DashboardPanel() {
-  const [sourceCount, setSourceCount] = useState(0);
-  const [quotaUsed, setQuotaUsed] = useState(0);
-  const [quotaLimit, setQuotaLimit] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const [sources, sub] = await Promise.all([
-          fetchSources(),
-          fetchSubscription("demo").catch(() => null),
-        ]);
-        setSourceCount(sources.length);
-        if (sub) {
-          setQuotaUsed(sub.usage_this_month);
-          setQuotaLimit(sub.monthly_quota);
-        }
-      } catch { /* ignore */ } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
-  if (loading) return <div className="panel dashboard-panel"><h2>Панель управления</h2><div className="loading">Загрузка...</div></div>;
+  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   return (
-    <div className="panel dashboard-panel">
-      <h2>Панель управления</h2>
-      <div className="stats-grid">
-        <div className="stat-card">
-          <span className="stat-value">{sourceCount}</span>
-          <span className="stat-label">Активных источников</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-value">{quotaLimit > 0 ? `${quotaUsed}/${quotaLimit}` : "—"}</span>
-          <span className="stat-label">Запросов в месяц</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-value">Tier-1</span>
-          <span className="stat-label">Уровень источников</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-value">✓</span>
-          <span className="stat-label">Система готова</span>
-        </div>
-      </div>
-      {quotaLimit > 0 && (
-        <div className="info-section">
-          <h3>Использование квоты</h3>
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${Math.min(100, (quotaUsed / quotaLimit) * 100)}%` }} />
-          </div>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: "var(--spacing-4)" }}>
+      <h2 style={{ margin: 0, fontSize: "var(--font-size-lg)", color: "var(--color-text)" }}>
+        Панель управления
+      </h2>
+      {!iframeLoaded && (
+        <div style={{ padding: "var(--spacing-8)", textAlign: "center", color: "var(--color-text-secondary)" }}>
+          Загрузка дашборда...
         </div>
       )}
+      <iframe
+        src={SUPERSET_URL}
+        title="Superset Dashboard"
+        onLoad={() => setIframeLoaded(true)}
+        style={{
+          flex: 1,
+          width: "100%",
+          border: "none",
+          borderRadius: "var(--radius-md)",
+          background: "#fff",
+          display: iframeLoaded ? "block" : "none",
+        }}
+        allow="fullscreen"
+      />
     </div>
   );
 }
