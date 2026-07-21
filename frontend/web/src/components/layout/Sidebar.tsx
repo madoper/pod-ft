@@ -1,4 +1,4 @@
-﻿import { type LucideIcon, LayoutDashboard, MessageSquareText, FileSearch, Library, UserCircle, Settings, Info } from "lucide-react";
+﻿import { type LucideIcon, BarChart3, MessageSquareText, FileSearch, Library, UserCircle, Settings, Info } from "lucide-react";
 
 type NavItem = {
   id: string;
@@ -7,7 +7,7 @@ type NavItem = {
 };
 
 const mainNav: NavItem[] = [
-  { id: "dashboard", label: "Дашборд", icon: LayoutDashboard },
+  { id: "superset", label: "Superset", icon: BarChart3 },
   { id: "ask", label: "Запрос", icon: MessageSquareText },
   { id: "check", label: "Проверка", icon: FileSearch },
   { id: "sources", label: "Источники", icon: Library },

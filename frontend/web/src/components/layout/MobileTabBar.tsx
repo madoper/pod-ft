@@ -1,4 +1,4 @@
-﻿import { LayoutDashboard, MessageSquareText, FileSearch, Library, UserCircle } from "lucide-react";
+﻿import { BarChart3, MessageSquareText, FileSearch, Library, UserCircle } from "lucide-react";
 
 interface MobileTabBarProps {
   activeTab: string;
@@ -6,7 +6,7 @@ interface MobileTabBarProps {
 }
 
 const tabs = [
-  { id: "dashboard", label: "Дашборд", icon: LayoutDashboard },
+  { id: "superset", label: "Superset", icon: BarChart3 },
   { id: "ask", label: "Запрос", icon: MessageSquareText },
   { id: "check", label: "Проверка", icon: FileSearch },
   { id: "sources", label: "Источники", icon: Library },

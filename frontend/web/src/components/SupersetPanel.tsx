@@ -2,13 +2,13 @@ import { useState } from "react";
 
 const SUPERSET_URL = "/superset/";
 
-export default function DashboardPanel() {
+export default function SupersetPanel() {
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: "var(--spacing-4)" }}>
       <h2 style={{ margin: 0, fontSize: "var(--font-size-lg)", color: "var(--color-text)" }}>
-        Панель управления
+        Superset
       </h2>
       {!iframeLoaded && (
         <div style={{ padding: "var(--spacing-8)", textAlign: "center", color: "var(--color-text-secondary)" }}>
@@ -17,7 +17,7 @@ export default function DashboardPanel() {
       )}
       <iframe
         src={SUPERSET_URL}
-        title="Superset Dashboard"
+        title="Superset"
         onLoad={() => setIframeLoaded(true)}
         style={{
           flex: 1,
