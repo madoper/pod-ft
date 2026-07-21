@@ -37,7 +37,7 @@ export default function MobileTabBar({ activeTab, onTabChange }: MobileTabBarPro
         return (
           <button
             key={tab.id}
-            onClick={() => onTabChange(tab.id)}
+            onClick={() => tab.id === 'superset' ? window.open('/superset/', '_blank', 'noopener,noreferrer') : onTabChange(tab.id)}
             aria-label={tab.label}
             aria-current={isActive ? "page" : undefined}
             style={{

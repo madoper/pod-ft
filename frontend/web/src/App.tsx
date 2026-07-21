@@ -2,7 +2,6 @@
 import { ThemeProvider } from "./components/ThemeProvider";
 import AppShell from "./components/layout/AppShell";
 import ChatPanel from "./components/chat/ChatPanel";
-import SupersetPanel from "./components/SupersetPanel";
 import DocCheckPanel from "./components/DocCheckPanel";
 import SourcePanel from "./components/SourcePanel";
 import AboutPanel from "./components/AboutPanel";
@@ -10,12 +9,12 @@ import AdminPanel from "./components/AdminPanel";
 import ProfilePanel from "./components/ProfilePanel";
 import OnboardingGuide from "./components/OnboardingGuide";
 
-type Tab = "superset" | "ask" | "check" | "sources" | "profile" | "about" | "admin";
+type Tab = "ask" | "check" | "sources" | "profile" | "about" | "admin";
 
 const STORAGE_KEY = "podft_onboarding_seen";
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("superset");
+  const [tab, setTab] = useState<Tab>("ask");
   const [showWelcome, setShowWelcome] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -37,7 +36,6 @@ export default function App() {
     <ThemeProvider>
       <AppShell activeTab={tab} onTabChange={handleTabChange}>
         {tab === "ask" && <ChatPanel />}
-        {tab === "superset" && <SupersetPanel />}
         {tab === "check" && <DocCheckPanel />}
         {tab === "sources" && <SourcePanel />}
         {tab === "profile" && <ProfilePanel />}

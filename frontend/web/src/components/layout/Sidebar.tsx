@@ -59,7 +59,7 @@ export default function Sidebar({ activeTab, collapsed, onTabChange, onToggleCol
           return (
             <button
               key={item.id}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => item.id === 'superset' ? window.open('/superset/', '_blank', 'noopener,noreferrer') : onTabChange(item.id)}
               aria-current={isActive ? "page" : undefined}
               title={collapsed ? item.label : undefined}
               style={{
