@@ -13,9 +13,6 @@ services:
     profiles:
       - never
 
-volumes:
-  superset_data:
-
   superset:
     image: apache/superset:latest
     container_name: podft-superset
@@ -55,3 +52,6 @@ volumes:
       superset init &&
       gunicorn -w 2 -k gevent -b 0.0.0.0:8088 --timeout 120 --access-logfile - 'superset.app:create_app()'
       "
+
+volumes:
+  superset_data:
