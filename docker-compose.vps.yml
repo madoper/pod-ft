@@ -47,10 +47,8 @@ services:
       - podft-net
     command: >
       sh -c "
-      pip install --user psycopg2-binary 2>&1 &&
+      pip install --user psycopg2-binary gevent 2>&1 &&
       export PYTHONPATH=\"$$HOME/.local/lib/python3.10/site-packages:$$PYTHONPATH\" &&
-      echo \"PYTHONPATH=$$PYTHONPATH\" &&
-      python3 -c 'import psycopg2; print(\"psycopg2 OK:\", psycopg2.__version__)' &&
       superset fab create-admin --username admin --firstname Admin --lastname User --email admin@vectornode.ru --password admin 2>/dev/null || true &&
       superset db upgrade &&
       superset init &&
