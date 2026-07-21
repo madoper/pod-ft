@@ -111,6 +111,9 @@ jobs:
           script: |
             cd /opt/podft
             git pull origin main
+            cp infra/nginx/nginx-vps.conf /etc/nginx/sites-available/podft
+            ln -sf /etc/nginx/sites-available/podft /etc/nginx/sites-enabled/vectornode.ru
+            nginx -t && systemctl reload nginx
             if ! grep -q "BOT_TOKEN" .env 2>/dev/null; then echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" >> .env; fi
             if ! grep -q "LLM_PROVIDER=openrouter" .env 2>/dev/null; then
               sed -i "/^LLM_/d" .env 2>/dev/null || true
