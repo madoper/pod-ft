@@ -40,3 +40,6 @@ SUPERSET_WEBSERVER_PORT = int(os.getenv("SUPERSET_PORT", 8088))
 WTF_CSRF_ENABLED = True
 WTF_CSRF_EXEMPT_LIST = []
 TALISMAN_ENABLED = False
+
+ENABLE_PROXY_FIX = True
+PROXY_FIX_CONFIG = {"x_for": 1, "x_proto": 1, "x_host": 1, "x_port": 1, "x_prefix": 1}
