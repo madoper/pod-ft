@@ -36,7 +36,16 @@ make dev                     # infra + migrations + gateway dev server
 make infra-vps               # docker compose up without neo4j (1 GB VPS)
 ```
 
-## Sprint 8 completed items
+## Sprint 10 — Superset BI
+
+| Component | Location | Status |
+|---|---|---|
+| **Superset container** | `docker-compose.vps.yml` | Apache Superset BI on VPS, connects to PostgreSQL, accessible at `/superset/`; `apache/superset:latest` with `psycopg2-binary` + `gevent` installed via pip `--user` at startup |
+| **Superset config** | `infra/superset-init/superset_config.py` | PostgreSQL backend, Redis caching, `/superset` base URL, pythonpath volume mount |
+| **nginx proxy** | `infra/nginx/nginx-vps.conf` | `/superset/` → `localhost:8088` with `X-Script-Name` header |
+| **Superset web** | `https://vectornode.ru/superset/` | HTTP 200, login page served via nginx SSL |
+
+## Sprint 9 (implemented)
 
 | Component | Location | Status |
 |---|---|---|
